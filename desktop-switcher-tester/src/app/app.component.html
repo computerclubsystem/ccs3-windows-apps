@@ -1,0 +1,11 @@
+<div class="ccs3-flex-column">
+  <div class="ccs3-flex-row">
+    <button (click)="onSwitchToDefaultDesktop()">Switch to default desktop</button>
+    <button (click)="onSwitchToSecuredDesktop()">Switch to secured desktop</button>
+  </div>
+  <div>
+    {{response() | json}}
+  </div>
+</div>
+
+<router-outlet />
