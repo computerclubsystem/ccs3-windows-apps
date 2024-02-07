@@ -1,6 +1,6 @@
 ﻿using desktop_switcher.Models;
 using Microsoft.AspNetCore.Mvc;
-using SwitchToDefaultDesktop;
+using DesktopManagerLib;
 
 namespace desktop_switcher.Controllers {
     [ApiController]

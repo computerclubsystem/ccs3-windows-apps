@@ -1,4 +1,19 @@
-using SwitchToDefaultDesktop;
+using DesktopManagerLib;
+using StackExchange.Redis;
+
+//ConnectionMultiplexer redis = await ConnectionMultiplexer.ConnectAsync("192.168.1.9");
+//IDatabase db = redis.GetDatabase();
+////await db.StringSetAsync("llll", "ooooo");
+////Console.WriteLine(await db.StringGetAsync("llll"));
+//var subscriber = redis.GetSubscriber();
+//var rc = new RedisChannel("ccs3/test", RedisChannel.PatternMode.Literal);
+//var cmq = await subscriber.SubscribeAsync(rc);
+//cmq.OnMessage(msg => {
+//    Console.WriteLine(msg);
+//});
+//var rmsg = new RedisValue("test message");
+//await subscriber.PublishAsync(rc,rmsg);
+
 
 var builder = WebApplication.CreateBuilder(args);
 

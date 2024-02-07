@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace SwitchToDefaultDesktop;
+namespace DesktopManagerLib;
 
 public class DesktopManager {
     private DesktopManagerState _state;
