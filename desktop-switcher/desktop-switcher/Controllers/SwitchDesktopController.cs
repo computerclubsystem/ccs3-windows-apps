@@ -9,15 +9,18 @@ namespace desktop_switcher.Controllers {
         ILogger<SwitchDesktopController> logger,
         DesktopManager desktopManager
     ) : ControllerBase {
+        private const string switchingResultMessage = "Switching result {0}";
+
         [HttpPut]
         public Task<SwitchDesktopResponse> SwitchDesktop(SwitchDesktopRequest req) {
+            bool switchResult;
             logger.LogDebug("Switching to desktop '{0}'", req.DesktopType);
             if (req.DesktopType == DesktopType.Default) {
-                bool switchResult = desktopManager.SwitchToDefaultDesktop();
-                logger.LogTrace("Switching result {0}", switchResult);
+                switchResult = desktopManager.SwitchToDefaultDesktop();
+                logger.LogDebug(switchingResultMessage, switchResult);
             } else if (req.DesktopType == DesktopType.Secured) {
-                bool switchResult = desktopManager.SwitchToSecureDesktop();
-                logger.LogTrace("Switching result {0}", switchResult);
+                switchResult = desktopManager.SwitchToSecureDesktop();
+                logger.LogDebug(switchingResultMessage, switchResult);
 #if CCS3_RESTORE_DESKTOP
                 Task.Run(async () => {
                     await Task.Delay(TimeSpan.FromSeconds(3));
@@ -25,10 +28,10 @@ namespace desktop_switcher.Controllers {
                 });
 #endif
             } else {
-
+                switchResult = false;
             }
 
-            SwitchDesktopResponse res = new();
+            SwitchDesktopResponse res = new() { Success = switchResult };
             return Task.FromResult(res);
         }
     }
