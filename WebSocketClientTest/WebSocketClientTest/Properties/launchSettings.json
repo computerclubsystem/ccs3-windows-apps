@@ -2,7 +2,7 @@
   "profiles": {
     "WebSocketClientTest": {
       "commandName": "Project",
-      "commandLineArgs": "wss://localhost:8443 device-1"
+      "commandLineArgs": "wss://localhost:65443"
     }
   }
 }
