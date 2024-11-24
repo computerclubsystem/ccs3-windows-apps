@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!--
+https://go.microsoft.com/fwlink/?LinkID=208121.
+-->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>D:\dev\computerclubsystem\ccs3-windows-apps\desktop-switcher\desktop-switcher\bin\Release\net9.0\publish\</_PublishTargetUrl>
+    <History>True|2024-11-24T13:33:30.5154588Z||;True|2024-11-24T15:32:41.0566726+02:00||;False|2024-11-24T15:32:24.0559516+02:00||;True|2024-11-24T15:07:35.8347170+02:00||;True|2024-11-24T15:07:07.0465273+02:00||;True|2024-11-24T15:06:38.4709634+02:00||;True|2024-11-24T15:05:53.9168172+02:00||;True|2024-11-24T15:05:19.7106778+02:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>

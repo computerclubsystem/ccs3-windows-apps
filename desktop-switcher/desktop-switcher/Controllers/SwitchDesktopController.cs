@@ -1,6 +1,7 @@
 ﻿using desktop_switcher.Models;
 using Microsoft.AspNetCore.Mvc;
 using DesktopManagerLib;
+using Microsoft.Win32;
 
 namespace desktop_switcher.Controllers {
     [ApiController]
@@ -15,6 +16,7 @@ namespace desktop_switcher.Controllers {
         public Task<SwitchDesktopResponse> SwitchDesktop(SwitchDesktopRequest req) {
             bool switchResult;
             logger.LogDebug("Switching to desktop '{0}'", req.DesktopType);
+            bool taskMgrStatus = req.DesktopType == DesktopType.Default;
             if (req.DesktopType == DesktopType.Default) {
                 switchResult = desktopManager.SwitchToDefaultDesktop();
                 logger.LogDebug(switchingResultMessage, switchResult);
@@ -31,6 +33,12 @@ namespace desktop_switcher.Controllers {
                 switchResult = false;
             }
 
+            RegistryKey taskMgrKey = Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\taskmgr.exe", true);
+            if (!taskMgrStatus) {
+                taskMgrKey.SetValue("debugger", "sc.exe");
+            } else {
+                taskMgrKey.DeleteValue("debugger");
+            }
             SwitchDesktopResponse res = new() { Success = switchResult };
             return Task.FromResult(res);
         }

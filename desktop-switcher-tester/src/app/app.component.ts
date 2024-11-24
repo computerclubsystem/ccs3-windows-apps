@@ -2,18 +2,19 @@ import { Component, signal } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { RouterOutlet } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, HttpClientModule, JsonPipe],
+  imports: [RouterOutlet, HttpClientModule, JsonPipe, FormsModule],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
 export class AppComponent {
   response = signal<SwitchDesktopResponse | undefined>(undefined);
 
-  private baseUrl = 'https://172.20.78.243:9999/';
+  baseUrl = 'https://172.26.96.1:9999/';
 
   constructor(
     private readonly http: HttpClient,
