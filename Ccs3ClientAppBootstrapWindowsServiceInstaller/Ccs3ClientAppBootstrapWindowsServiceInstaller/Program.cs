@@ -14,7 +14,10 @@ internal class Program {
             ShowNotPrivilegedNotice();
         }
 
-        ShowUsage();
+        if (args.Length == 0 || args[0] == "--help") {
+            ShowUsage();
+            return 0;
+        }
 
         CommandLineParams cmdParams = ParseCommandLine(args);
         if (cmdParams.UnknownParameters is not null) {
