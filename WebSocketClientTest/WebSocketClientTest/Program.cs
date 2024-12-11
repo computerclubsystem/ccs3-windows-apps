@@ -55,11 +55,12 @@ namespace WebSocketClientTest {
             Uri uri = new Uri(uriString);
             while (true) {
                 try {
+                    var hhh = new HttpClientHandler();
                     ws = new ClientWebSocket();
                     X509Store store = new X509Store("MY", StoreLocation.LocalMachine);
                     store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                     X509Certificate2Collection collection = store.Certificates;
-                    var ccs3DeviceCerts = collection.Find(X509FindType.FindByIssuerName, "CCS3-Root-CA", false);
+                    var ccs3DeviceCerts = collection.Find(X509FindType.FindByIssuerName, "CCS3 Root CA", false);
                     var ccs3DeviceTimeValidCerts = ccs3DeviceCerts.Find(X509FindType.FindByTimeValid, DateTime.Now, false);
                     var firstCcs3DeviceCert = ccs3DeviceTimeValidCerts.MaxBy(x => x.NotAfter); // .OrderByDescending(x => x.NotAfter).FirstOrDefault();
                     if (firstCcs3DeviceCert != null) {
@@ -89,6 +90,7 @@ namespace WebSocketClientTest {
                     break;
                 } catch (Exception ex) {
                     Log("Cannot connect. " + ex.ToString());
+                    Thread.Sleep(TimeSpan.FromSeconds(2));
                 }
             }
             StartReceiving();
@@ -140,11 +142,13 @@ namespace WebSocketClientTest {
                     } else {
                         // Socket was closed - reconnect
                         Log("The socket has been closed, reconnecting");
+                        Thread.Sleep(TimeSpan.FromSeconds(2));
                         ConnectWebSocket(serverUri);
                         break;
                     }
                 } catch (Exception ex) {
                     Log("Error on receiving: " + ex.ToString());
+                    Thread.Sleep(TimeSpan.FromSeconds(2));
                     ConnectWebSocket(serverUri);
                     break;
                 }

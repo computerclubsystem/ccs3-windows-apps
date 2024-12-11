@@ -7,8 +7,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);CCS3_NO_DESKTOP_SWITCH</DefineConstants>
-  </PropertyGroup>
-
 </Project>
