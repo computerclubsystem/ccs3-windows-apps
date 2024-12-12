@@ -95,13 +95,16 @@ public class Program {
             _logger.LogCritical("The value '{0}' for the environment variable '{1}' is missing or invalid URL", envVarValue, Ccs3EnvironmentVariableNames.CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL);
             return null;
         }
+        // TODO: This must provided as environment variable
+        //       or provide the issuer certificate thumbprint and search for it instead of using Certificates.Find(X509FindType.FindByIssuerName)
+        string caCertCN = "CCS3 Doom Certificate Authority";
         using X509Store x509Store = new X509Store(StoreName.My, StoreLocation.LocalMachine, OpenFlags.ReadOnly);
-        var certsIssuedByCcs3RootCa = x509Store.Certificates.Find(X509FindType.FindByIssuerName, "CCS3 Root CA", false);
-        _logger.LogInformation("Certificates issued by 'CCS3 Root CA':{0}{1}", Environment.NewLine, string.Join(Environment.NewLine, certsIssuedByCcs3RootCa.Select(x => x.Subject + " (thumbprint " + x.Thumbprint + ")")));
+        var certsIssuedByCcs3RootCa = x509Store.Certificates.Find(X509FindType.FindByIssuerName, caCertCN, false);
+        _logger.LogInformation("Certificates issued by '{0}':{1}{2}", caCertCN, Environment.NewLine, string.Join(Environment.NewLine, certsIssuedByCcs3RootCa.Select(x => x.Subject + " (thumbprint " + x.Thumbprint + ")")));
         var pcCerts = certsIssuedByCcs3RootCa.Find(X509FindType.FindBySubjectName, listenUri.Host, false);
         _logger.LogInformation("Certificates with subject '{0}':{1}{2}", listenUri.Host, Environment.NewLine, string.Join(Environment.NewLine, pcCerts.Select(x => x.Subject + " (thumbprint " + x.Thumbprint + ")")));
         if (pcCerts.Count == 0) {
-            _logger.LogCritical("Cannot find certificate issued by 'CCS3 Root CA' with subject name '{0}'", listenUri.Host);
+            _logger.LogCritical("Cannot find certificate issued by '{0}' with subject name '{1}'", caCertCN, listenUri.Host);
         }
         var cert = pcCerts.FirstOrDefault();
         return cert;
