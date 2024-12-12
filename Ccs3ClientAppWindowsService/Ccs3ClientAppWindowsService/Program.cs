@@ -54,7 +54,7 @@ public class Program {
                 listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3;
                 listenOptions.UseHttps(httpsConfig => {
                     httpsConfig.ServerCertificate = GetLocalServiceCertificate();
-                    httpsConfig.SslProtocols = System.Security.Authentication.SslProtocols.Tls13;
+                    // httpsConfig.SslProtocols = System.Security.Authentication.SslProtocols.Tls13;
                 });
             });
         });
