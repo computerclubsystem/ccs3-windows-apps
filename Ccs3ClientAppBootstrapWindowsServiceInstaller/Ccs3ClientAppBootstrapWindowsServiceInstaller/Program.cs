@@ -198,7 +198,7 @@ internal class Program {
         Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe");
         Console.WriteLine();
         Console.WriteLine("- Installs the CCS3 Client App Bootstrap Windows Service and also sets the environment variables using IP addresses:");
-        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://192.168.1.20:65450 --pc-connector-service-base-url https://192.168.1.20:65451 --client-app-windows-service-local-base-url https://127.0.0.1:30000");
+        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://192.168.6.9:65500 --pc-connector-service-base-url https://192.168.6.9:65501 --client-app-windows-service-local-base-url https://127.0.0.1:30000");
         Console.WriteLine();
         Console.WriteLine("- Installs the CCS3 Client App Bootstrap Windows Service and also sets the environment variables using host names:");
         Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://ccs3-server-pc:65450 --pc-connector-service-base-url https://ccs3-server-pc:65451 --client-app-windows-service-local-base-url https://localhost:30000");
