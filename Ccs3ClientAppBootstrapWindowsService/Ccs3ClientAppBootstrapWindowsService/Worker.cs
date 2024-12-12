@@ -131,13 +131,27 @@ public class Worker : BackgroundService {
                 if (canLogCritical) {
                     _logger.LogCritical("Can't register client app service. sc.exe exit code {0}", proc.ExitCode);
                 }
+            } else {
+                ConfigureClientAppServiceRestartsOnFailure(appServiceName);
             }
-            StartService(appServiceName, TimeSpan.FromSeconds(10));
+            StartService(appServiceName, TimeSpan.FromSeconds(30));
         } catch (Exception ex) {
             if (canLogCritical) {
                 _logger.LogCritical(ex, "Can't register or start client app service");
             }
         }
+    }
+
+    private void ConfigureClientAppServiceRestartsOnFailure(string appServiceName) {
+        ProcessStartInfo psi = new() {
+            FileName = "sc.exe",
+            Arguments = string.Format("failure \"{0}\" reset= 600 actions= restart/0/restart/0/restart/0", appServiceName)
+        };
+        Console.WriteLine("Configuring '{0}' to restart after failure", appServiceName);
+        Console.WriteLine("sc.exe {0}", psi.Arguments);
+        using Process proc = Process.Start(psi)!;
+        bool exitedNormally = proc.WaitForExit(TimeSpan.FromSeconds(5));
+        Console.WriteLine("sc.exe exit code: {0}. Completed for less that 5 seconds: {1}",proc.ExitCode, exitedNormally);
     }
 
     private void StopService(string serviceName, TimeSpan timeout) {

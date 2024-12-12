@@ -31,7 +31,7 @@ sc create Ccs3ClientAppBootstrapWindowsService DisplayName= "CCS3 Client App Boo
 ```
 - Add system environment variable `CCS3_STATIC_FILES_SERVICE_BASE_URL` with value `https://<host name or ip address of static files server>:<port>`
 - Add system environment variable `CCS3_PC_CONNECTOR_SERVICE_BASE_URL` with value `https://<host name or ip address of PC connector server>:<port>`
-- Add system environment variable `CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL` with value `https://localhost:<port>` or `https://127.0.0.1:<port>` - the port should be available on the client PC - for example use value 30000 or greater. Also trusted certificate with specified `localhost` or `127.0.0.1` CN must exist in the certificate storage to avoid browser certificate errors when the customer opens the information for its session
+- Add system environment variable `CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL` with value `https://127.0.0.1:<port>` or `https://localhost:<port>` - the port should be available on the client PC - for example use value 30000 or greater. Also trusted certificate with specified `127.0.0.1` or `localhost` CN must exist in the local computer certificate storage to enable CCS3 Client App Windows Service to function correctly
 - Start "mmc.exe" as administrator
 - Add the "Services" snap in and find the service `CCS3 Client App Bootstrap Windows Service`
 - Configure the `Ccs3ClientAppBootstrapWindowsService` to restart always with 0 for "Restart service after"

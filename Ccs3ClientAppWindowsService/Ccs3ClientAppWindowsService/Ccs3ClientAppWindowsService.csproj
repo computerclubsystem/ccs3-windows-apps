@@ -4,7 +4,12 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+	<PublishUrl>bin\Release\net9.0-windows\publish\win-x64\</PublishUrl>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	<PublishSingleFile>true</PublishSingleFile>
+	<SelfContained>true</SelfContained>
+	<WebPublishMethod>FileSystem</WebPublishMethod>
+	<PublishProvider>FileSystem</PublishProvider>
     <UserSecretsId>dotnet-Ccs3ClientAppWindowsService-609a5ad0-50a8-4f46-9970-6d3c1940226e</UserSecretsId>
   </PropertyGroup>
 

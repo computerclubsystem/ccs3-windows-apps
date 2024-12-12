@@ -26,17 +26,26 @@ internal class Program {
             return (int)ExitCode.UnknownParameterFound;
         }
         SetDefaultCommandLineParamValues(cmdParams);
+        List<ExecutionResultWithName> exResults = new();
 
-        StopClientAppServices();
+        ExecutionResult stopClientAppServicesResult = StopClientAppServices();
+        exResults.Add(new ExecutionResultWithName { Name = "StopClientAppServices", ExecutionResult = stopClientAppServicesResult });
 
         string targetFolder = GetTargetFolder();
         CreateTargetFolder(targetFolder);
 
         ExtractContent(cmdParams.ContentFilePath, targetFolder);
 
-        UnregisterService(_ccs3ClientAppBootstrapWindowsServiceName);
+        ExecutionResult unregisterServiceResult = UnregisterService(_ccs3ClientAppBootstrapWindowsServiceName);
+        exResults.Add(new ExecutionResultWithName { Name = $"UnregisterService {_ccs3ClientAppBootstrapWindowsServiceName}", ExecutionResult = unregisterServiceResult });
+
         string fullBootstrapServiceExecutableFilePath = Path.Combine(targetFolder, _ccs3ClientAppBootstrapWindowsServiceExecutableFileName);
-        RegisterBootstrapExecutableAsService(fullBootstrapServiceExecutableFilePath);
+        ExecutionResult registerBootstrapAsServiceResult = RegisterBootstrapExecutableAsService(fullBootstrapServiceExecutableFilePath);
+        exResults.Add(new ExecutionResultWithName { Name = "RegisterBootstrapExecutableAsService", ExecutionResult = registerBootstrapAsServiceResult });
+
+
+        ExecutionResult configureRestartsResult = ConfigureBootstrapServiceRestartsOnFailure();
+        exResults.Add(new ExecutionResultWithName { Name = "ConfigureBootstrapServiceRestartsOnFailure", ExecutionResult = configureRestartsResult });
 
         SetEnvironmentVariables(
             cmdParams.StaticFilesServiceBaseUrl,
@@ -45,6 +54,19 @@ internal class Program {
         );
 
         Console.WriteLine();
+
+        List<ExecutionResultWithName> failureExecutions = exResults.Where(res => !res.ExecutionResult.Success).ToList();
+        if (failureExecutions.Count > 0) {
+            Console.WriteLine("--------------------");
+            Console.WriteLine("Warnings:");
+            foreach (ExecutionResultWithName result in failureExecutions) {
+                Console.WriteLine();
+                Console.WriteLine("Name: {0}", result.Name);
+                Console.WriteLine("Message: {0}", result.ExecutionResult.ErrorMessage + " " + result.ExecutionResult.Message);
+            }
+            Console.WriteLine("--------------------");
+        }
+
         Console.WriteLine("Installation finished. You can delete the installer files and restart.");
         return (int)ExitCode.Success;
     }
@@ -79,21 +101,41 @@ internal class Program {
         ZipFile.ExtractToDirectory(zipFilePath, targetFolder, true);
     }
 
-    private static void StopClientAppServices() {
+    private static ExecutionResult StopClientAppServices() {
+        ExecutionResult result = new() {
+            Success = true,
+        };
+        List<string?> errorsMessages = new();
+
         ServiceController[] services = ServiceController.GetServices();
 
         ServiceController? clientAppService = services.FirstOrDefault(x => x.ServiceName == _ccs3ClientAppWindowsServiceName);
         if (clientAppService != null) {
-            StopService(clientAppService);
+            ExecutionResult er = StopService(clientAppService);
+            if (er.Success is false) {
+                result.Success = false;
+                errorsMessages.Add(er.ErrorMessage);
+            }
         }
 
         ServiceController? bootstrapService = services.FirstOrDefault(x => x.ServiceName == _ccs3ClientAppBootstrapWindowsServiceName);
         if (bootstrapService != null) {
-            StopService(bootstrapService);
+            ExecutionResult er = StopService(bootstrapService);
+            if (er.Success is false) {
+                result.Success = false;
+                errorsMessages.Add(er.ErrorMessage);
+            }
         }
+
+        if (result.Success is false) {
+            errorsMessages = errorsMessages.Where(msg => !string.IsNullOrWhiteSpace(msg)).ToList();
+            result.ErrorMessage = string.Join(" ; ", errorsMessages);
+        }
+        return result;
     }
 
-    private static void StopService(ServiceController serviceController) {
+    private static ExecutionResult StopService(ServiceController serviceController) {
+        ExecutionResult executionResult = new();
         try {
             Console.WriteLine("Stopping service {0}. Service status: {1}", serviceController.ServiceName, serviceController.Status);
             if (serviceController.Status == ServiceControllerStatus.Running
@@ -101,12 +143,18 @@ internal class Program {
                 serviceController.Stop(true);
             }
             serviceController.WaitForStatus(ServiceControllerStatus.Stopped);
+            executionResult.Success = true;
         } catch (Exception ex) {
-            Console.WriteLine("Error while stopping service {0}. Error: {1}", serviceController.ServiceName, ex.Message);
+            executionResult.Success = false;
+            executionResult.ErrorMessage = string.Format("Error while stopping service {0}. Error: {1}", serviceController.ServiceName, ex.Message);
+            Console.WriteLine(executionResult.ErrorMessage);
         }
+        return executionResult;
     }
 
-    private static void UnregisterService(string serviceName) {
+    private static ExecutionResult UnregisterService(string serviceName) {
+        ExecutionResult result = new();
+
         ProcessStartInfo psi = new() {
             FileName = "sc.exe",
             Arguments = string.Format("delete \"{0}\"", serviceName)
@@ -114,10 +162,19 @@ internal class Program {
         Console.WriteLine("Unregistering '{0}' as service. Executing:", serviceName);
         Console.WriteLine("sc.exe {0}", psi.Arguments);
         using Process proc = Process.Start(psi)!;
-        proc.WaitForExit(TimeSpan.FromSeconds(5));
+        bool exitedNormally = proc.WaitForExit(TimeSpan.FromSeconds(5));
+        if (exitedNormally && proc.ExitCode == 0) {
+            result.Success = true;
+        } else {
+            result.Success = false;
+            result.ErrorMessage = string.Format("Service {0} registration might not be completed. sc.exe exit code: {1}, sc.exe completed for less than 5 seconds: {2}", serviceName, proc.ExitCode, exitedNormally);
+        }
+        return result;
     }
 
-    private static void RegisterBootstrapExecutableAsService(string fullBootstrapExecutableFilePath) {
+
+    private static ExecutionResult RegisterBootstrapExecutableAsService(string fullBootstrapExecutableFilePath) {
+        ExecutionResult result = new();
         ProcessStartInfo psi = new() {
             FileName = "sc.exe",
             Arguments = string.Format("create \"{0}\" DisplayName= \"CCS3 Client App Bootstrap Windows Service\" start= auto obj= LocalSystem binpath= \"{1}\"", _ccs3ClientAppBootstrapWindowsServiceName, fullBootstrapExecutableFilePath)
@@ -125,10 +182,33 @@ internal class Program {
         Console.WriteLine("Registering '{0}' as service. Executing:", fullBootstrapExecutableFilePath);
         Console.WriteLine("sc.exe {0}", psi.Arguments);
         using Process proc = Process.Start(psi)!;
-        proc.WaitForExit(TimeSpan.FromSeconds(5));
-        if (proc.ExitCode != 0) {
-            Console.WriteLine("Can't register '{0}' as service. sc.exe exit code {1}", fullBootstrapExecutableFilePath, proc.ExitCode);
+        bool exitedNormally = proc.WaitForExit(TimeSpan.FromSeconds(5));
+        if (exitedNormally && proc.ExitCode == 0) {
+            result.Success = true;
+        } else {
+            result.Success = false;
+            result.ErrorMessage = string.Format("Can't register '{0}' as service. sc.exe exit code: {1}, sc.exe completed for less than 5 seconds: {2}", fullBootstrapExecutableFilePath, proc.ExitCode, exitedNormally);
         }
+        return result;
+    }
+
+    private static ExecutionResult ConfigureBootstrapServiceRestartsOnFailure() {
+        ExecutionResult result = new();
+        ProcessStartInfo psi = new() {
+            FileName = "sc.exe",
+            Arguments = string.Format("failure \"{0}\" reset= 600 actions= restart/0/restart/0/restart/0", _ccs3ClientAppBootstrapWindowsServiceName)
+        };
+        Console.WriteLine("Configuring '{0}' to restart after failure", _ccs3ClientAppBootstrapWindowsServiceName);
+        Console.WriteLine("sc.exe {0}", psi.Arguments);
+        using Process proc = Process.Start(psi)!;
+        bool exitedNormally = proc.WaitForExit(TimeSpan.FromSeconds(5));
+        if (exitedNormally && proc.ExitCode == 0) {
+            result.Success = true;
+        } else {
+            result.Success = false;
+            result.ErrorMessage = string.Format("Can't register '{0}' as service. sc.exe exit code: {1}, sc.exe completed for less than 5 seconds: {2}", _ccs3ClientAppBootstrapWindowsServiceName, proc.ExitCode, exitedNormally);
+        }
+        return result;
     }
 
 
@@ -224,5 +304,16 @@ internal class Program {
     private enum ExitCode {
         Success = 0,
         UnknownParameterFound = 1,
+    }
+
+    private class ExecutionResult {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public string? ErrorMessage { get; set; }
+    }
+
+    private class ExecutionResultWithName {
+        public string Name { get; set; }
+        public ExecutionResult ExecutionResult { get; set; }
     }
 }
