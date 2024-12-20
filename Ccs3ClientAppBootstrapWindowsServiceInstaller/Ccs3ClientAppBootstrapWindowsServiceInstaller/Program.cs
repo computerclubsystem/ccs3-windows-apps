@@ -50,7 +50,8 @@ internal class Program {
         SetEnvironmentVariables(
             cmdParams.StaticFilesServiceBaseUrl,
             cmdParams.PcConnectorServiceBaseUrl,
-            cmdParams.ClientAppWindowsServiceLocalBaseUrl
+            cmdParams.ClientAppWindowsServiceLocalBaseUrl,
+            cmdParams.CertificateAuthorityIssuerCertificateThumbprint
         );
 
         Console.WriteLine();
@@ -71,7 +72,12 @@ internal class Program {
         return (int)ExitCode.Success;
     }
 
-    private static void SetEnvironmentVariables(string? staticFilesServiceBaseUrl, string? pcConnectorServiceBaseUrl, string? clientAppServiceLocalBaseUrl) {
+    private static void SetEnvironmentVariables(
+        string? staticFilesServiceBaseUrl,
+        string? pcConnectorServiceBaseUrl,
+        string? clientAppServiceLocalBaseUrl,
+        string? certificateAuthorityIssuerCertificateThumbprint
+    ) {
         if (!string.IsNullOrEmpty(staticFilesServiceBaseUrl)) {
             Console.WriteLine("Setting environment variable {0} to '{1}'", Ccs3EnvironmentVariableNames.CCS3_STATIC_FILES_SERVICE_BASE_URL, staticFilesServiceBaseUrl);
             Environment.SetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_STATIC_FILES_SERVICE_BASE_URL, staticFilesServiceBaseUrl, EnvironmentVariableTarget.Machine);
@@ -83,6 +89,10 @@ internal class Program {
         if (!string.IsNullOrEmpty(clientAppServiceLocalBaseUrl)) {
             Console.WriteLine("Setting environment variable {0} to '{1}'", Ccs3EnvironmentVariableNames.CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL, clientAppServiceLocalBaseUrl);
             Environment.SetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL, clientAppServiceLocalBaseUrl, EnvironmentVariableTarget.Machine);
+        }
+        if (!string.IsNullOrEmpty(certificateAuthorityIssuerCertificateThumbprint)) {
+            Console.WriteLine("Setting environment variable {0} to '{1}'", Ccs3EnvironmentVariableNames.CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT, certificateAuthorityIssuerCertificateThumbprint);
+            Environment.SetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT, certificateAuthorityIssuerCertificateThumbprint, EnvironmentVariableTarget.Machine);
         }
     }
 
@@ -241,6 +251,10 @@ internal class Program {
                     cmdParams.ClientAppWindowsServiceLocalBaseUrl = args[i + 1];
                     i++;
                     break;
+                case "--certificate-authority-issuer-certificate-thumbprint":
+                    cmdParams.CertificateAuthorityIssuerCertificateThumbprint = args[i + 1];
+                    i++;
+                    break;
                 default:
                     unknownParams.Add(args[i]);
                     break;
@@ -271,17 +285,18 @@ internal class Program {
         Console.WriteLine("- Optional parameter --static-files-service-base-url specifies the URL where the static files are served. It is used by the bootstrap service to download other client application files. The provided value must also contain the port and will be created as system environment variable named {0}", Ccs3EnvironmentVariableNames.CCS3_STATIC_FILES_SERVICE_BASE_URL);
         Console.WriteLine("- Optional parameter --pc-connector-service-base-url specifies the URL of the PC-Connector. It is used by the client application service to connect the computer to the CCS3 system. The provided value will be created as system environment variable named {0}", Ccs3EnvironmentVariableNames.CCS3_PC_CONNECTOR_SERVICE_BASE_URL);
         Console.WriteLine("- Optional parameter --client-app-windows-service-local-base-url specifies the URL on which the client app service will listen for connections from the client app. This should point to either https://localhost:<port> or https://127.0.0.1:<port>. It is used by the client application to connect to the client application Windows service. The provided value will be created as system environment variable named {0}. A trusted certificate with the provided host name or IP address as CN must exist in the certificate storage to avoid certificate errors in the client browser that shows session information to the customer. It is recommended to use either https://localhost:<port> or https://127.0.0.1:<port> to avoid exposing client app Windows service to other machines in the network", Ccs3EnvironmentVariableNames.CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL);
-
+        Console.WriteLine("- Optional parameter --certificate-authority-issuer-certificate-thumbprint specifies the thumbprint of the CA certificate that issued other certificates. You can see the thumbprint by opening Certificate Manager - Local Computer - Truster Root Certificate Authorities - find the CCS3 Certificate Authority certificate - double-click - go to Details and click on Thumbprint. The provided value will be created as system environment variable named {0}", Ccs3EnvironmentVariableNames.CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT);
+        
         Console.WriteLine();
         Console.WriteLine("Samples:");
         Console.WriteLine("- Installs only the CCS3 Client App Bootstrap Windows Service - use it only if you already have all the environment variables set or if they will be set manually:");
         Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe");
         Console.WriteLine();
         Console.WriteLine("- Installs the CCS3 Client App Bootstrap Windows Service and also sets the environment variables using IP addresses:");
-        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://192.168.6.9:65500 --pc-connector-service-base-url https://192.168.6.9:65501 --client-app-windows-service-local-base-url https://127.0.0.1:30000");
+        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://192.168.6.9:65500 --pc-connector-service-base-url https://192.168.6.9:65501 --client-app-windows-service-local-base-url https://127.0.0.1:30000 --certificate-authority-issuer-certificate-thumbprint 3e2e19ce806cf7ceba97c53572e132d6a777fefa");
         Console.WriteLine();
         Console.WriteLine("- Installs the CCS3 Client App Bootstrap Windows Service and also sets the environment variables using host names:");
-        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://ccs3-server-pc:65450 --pc-connector-service-base-url https://ccs3-server-pc:65451 --client-app-windows-service-local-base-url https://localhost:30000");
+        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://ccs3-server-pc:65450 --pc-connector-service-base-url https://ccs3-server-pc:65451 --client-app-windows-service-local-base-url https://localhost:30000 --certificate-authority-issuer-certificate-thumbprint 3e2e19ce806cf7ceba97c53572e132d6a777fefa");
         Console.WriteLine();
         Console.WriteLine("----------------------------------------------------");
         Console.WriteLine();
@@ -292,6 +307,7 @@ internal class Program {
         public string? StaticFilesServiceBaseUrl { get; set; }
         public string? PcConnectorServiceBaseUrl { get; set; }
         public string? ClientAppWindowsServiceLocalBaseUrl { get; set; }
+        public string? CertificateAuthorityIssuerCertificateThumbprint { get; set; }
         public string[] UnknownParameters { get; set; }
     }
 
@@ -299,6 +315,7 @@ internal class Program {
         public static readonly string CCS3_STATIC_FILES_SERVICE_BASE_URL = "CCS3_STATIC_FILES_SERVICE_BASE_URL";
         public static readonly string CCS3_PC_CONNECTOR_SERVICE_BASE_URL = "CCS3_PC_CONNECTOR_SERVICE_BASE_URL";
         public static readonly string CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL = "CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL";
+        public static readonly string CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT = "CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT";
     }
 
     private enum ExitCode {

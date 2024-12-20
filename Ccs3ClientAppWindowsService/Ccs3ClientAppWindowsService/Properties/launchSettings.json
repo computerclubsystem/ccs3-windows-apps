@@ -3,7 +3,8 @@
     "Ccs3ClientAppWindowsService": {
       "commandName": "Project",
       "environmentVariables": {
-        "DOTNET_ENVIRONMENT": "Development"
+        "DOTNET_ENVIRONMENT": "Development",
+        "CCS3_CAWS_DEBUG_DISABLE_CLIENT_APP_PROCESS_START_LOGS": "true"
       },
       "dotnetRunMessages": true
     },

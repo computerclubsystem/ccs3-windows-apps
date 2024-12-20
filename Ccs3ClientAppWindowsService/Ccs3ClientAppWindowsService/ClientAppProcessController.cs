@@ -2,8 +2,7 @@
 
 namespace Ccs3ClientAppWindowsService;
 
-public static class ClientAppProcessController
-{
+public static class ClientAppProcessController {
     #region Win32 Constants
 
     private const int CREATE_UNICODE_ENVIRONMENT = 0x00000400;
@@ -82,8 +81,7 @@ public static class ClientAppProcessController
 
     #region Win32 Structs
 
-    private enum SW
-    {
+    private enum SW {
         SW_HIDE = 0,
         SW_SHOWNORMAL = 1,
         SW_NORMAL = 1,
@@ -100,8 +98,7 @@ public static class ClientAppProcessController
         SW_MAX = 10
     }
 
-    public enum WTS_CONNECTSTATE_CLASS
-    {
+    public enum WTS_CONNECTSTATE_CLASS {
         WTSActive,
         WTSConnected,
         WTSConnectQuery,
@@ -114,17 +111,7 @@ public static class ClientAppProcessController
         WTSInit
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct PROCESS_INFORMATION
-    {
-        public IntPtr hProcess;
-        public IntPtr hThread;
-        public uint dwProcessId;
-        public uint dwThreadId;
-    }
-
-    private enum SECURITY_IMPERSONATION_LEVEL
-    {
+    private enum SECURITY_IMPERSONATION_LEVEL {
         SecurityAnonymous = 0,
         SecurityIdentification = 1,
         SecurityImpersonation = 2,
@@ -132,8 +119,7 @@ public static class ClientAppProcessController
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct STARTUPINFO
-    {
+    private struct STARTUPINFO {
         public int cb;
         public String lpReserved;
         public String lpDesktop;
@@ -154,15 +140,13 @@ public static class ClientAppProcessController
         public IntPtr hStdError;
     }
 
-    private enum TOKEN_TYPE
-    {
+    private enum TOKEN_TYPE {
         TokenPrimary = 1,
         TokenImpersonation = 2
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct WTS_SESSION_INFO
-    {
+    public struct WTS_SESSION_INFO {
         public readonly UInt32 SessionID;
 
         [MarshalAs(UnmanagedType.LPStr)]
@@ -173,30 +157,26 @@ public static class ClientAppProcessController
 
     #endregion
 
-    public static List<WTS_SESSION_INFO> GetSessions()
-    {
+    public static List<WTS_SESSION_INFO> GetSessions() {
         List<WTS_SESSION_INFO> result = new();
 
-        var bResult = false;
+        //var bResult = false;
         var hImpersonationToken = IntPtr.Zero;
         var activeSessionId = INVALID_SESSION_ID;
         var pSessionInfo = IntPtr.Zero;
         var sessionCount = 0;
 
         // Get a handle to the user access token for the current active session.
-        if (WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1, ref pSessionInfo, ref sessionCount) != 0)
-        {
+        if (WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1, ref pSessionInfo, ref sessionCount) != 0) {
             var arrayElementSize = Marshal.SizeOf(typeof(WTS_SESSION_INFO));
             var current = pSessionInfo;
 
-            for (var i = 0; i < sessionCount; i++)
-            {
-                var si = (WTS_SESSION_INFO)Marshal.PtrToStructure((IntPtr)current, typeof(WTS_SESSION_INFO));
+            for (var i = 0; i < sessionCount; i++) {
+                WTS_SESSION_INFO si = (WTS_SESSION_INFO)Marshal.PtrToStructure((IntPtr)current, typeof(WTS_SESSION_INFO))!;
                 result.Add(si);
                 current += arrayElementSize;
 
-                if (si.State == WTS_CONNECTSTATE_CLASS.WTSActive)
-                {
+                if (si.State == WTS_CONNECTSTATE_CLASS.WTSActive) {
                     activeSessionId = si.SessionID;
                 }
             }
@@ -208,8 +188,7 @@ public static class ClientAppProcessController
     }
 
     // Gets the user token from the currently active session
-    private static bool GetSessionUserToken(ref IntPtr phUserToken)
-    {
+    private static bool GetSessionUserToken(ref IntPtr phUserToken) {
         var bResult = false;
         var hImpersonationToken = IntPtr.Zero;
         var activeSessionId = INVALID_SESSION_ID;
@@ -217,18 +196,14 @@ public static class ClientAppProcessController
         var sessionCount = 0;
 
         // Get a handle to the user access token for the current active session.
-        if (WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1, ref pSessionInfo, ref sessionCount) != 0)
-        {
+        if (WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1, ref pSessionInfo, ref sessionCount) != 0) {
             var arrayElementSize = Marshal.SizeOf(typeof(WTS_SESSION_INFO));
             var current = pSessionInfo;
 
-            for (var i = 0; i < sessionCount; i++)
-            {
-                var si = (WTS_SESSION_INFO)Marshal.PtrToStructure((IntPtr)current, typeof(WTS_SESSION_INFO));
+            for (var i = 0; i < sessionCount; i++) {
+                WTS_SESSION_INFO si = (WTS_SESSION_INFO)Marshal.PtrToStructure((IntPtr)current, typeof(WTS_SESSION_INFO))!;
                 current += arrayElementSize;
-
-                if (si.State == WTS_CONNECTSTATE_CLASS.WTSActive)
-                {
+                if (si.State == WTS_CONNECTSTATE_CLASS.WTSActive) {
                     activeSessionId = si.SessionID;
                 }
             }
@@ -237,19 +212,13 @@ public static class ClientAppProcessController
         }
 
         // If enumerating did not work, fall back to the old method
-        if (activeSessionId == INVALID_SESSION_ID)
-        {
+        if (activeSessionId == INVALID_SESSION_ID) {
             activeSessionId = WTSGetActiveConsoleSessionId();
         }
         var err0 = Marshal.GetLastSystemError();
 
         var tokenResult = WTSQueryUserToken(activeSessionId, ref hImpersonationToken);
-        var err1 = Marshal.GetLastPInvokeError();
-        var err2 = Marshal.GetLastSystemError();
-        var err3 = Marshal.GetLastWin32Error();
-        var tokenResultError = Marshal.GetLastWin32Error();
-        if (tokenResult != 0)
-        {
+        if (tokenResult != 0) {
             // Convert the impersonation token to a primary token
             bResult = DuplicateTokenEx(hImpersonationToken, 0, IntPtr.Zero,
                 (int)SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation, (int)TOKEN_TYPE.TokenPrimary,
@@ -261,22 +230,20 @@ public static class ClientAppProcessController
         return bResult;
     }
 
-    public static bool StartProcessAsCurrentUser(string appPath, string cmdLine = null, string workDir = null, bool visible = true)
-    {
+    public static StartProcessAsCurrentUserResult StartProcessAsCurrentUser(string appPath, string? cmdLine = null, string? workDir = null, bool visible = true) {
+        StartProcessAsCurrentUserResult result = new();
         var hUserToken = IntPtr.Zero;
         var startInfo = new STARTUPINFO();
         var procInfo = new PROCESS_INFORMATION();
         var pEnv = IntPtr.Zero;
-        int iResultOfCreateProcessAsUser;
 
         startInfo.cb = Marshal.SizeOf(typeof(STARTUPINFO));
 
-        try
-        {
-            if (!GetSessionUserToken(ref hUserToken))
-            {
-                return false;
-                //throw new ProcessCreationException("StartProcessAsCurrentUser: GetSessionUserToken failed.");
+        try {
+            if (!GetSessionUserToken(ref hUserToken)) {
+                result.Success = false;
+                result.LastErrors = GetLastErrors();
+                return result;
             }
 
             uint dwCreationFlags = CREATE_UNICODE_ENVIRONMENT | (uint)(visible ? CREATE_NEW_CONSOLE : CREATE_NO_WINDOW);
@@ -284,14 +251,13 @@ public static class ClientAppProcessController
             startInfo.wShowWindow = (short)(visible ? SW.SW_SHOW : SW.SW_HIDE);
             startInfo.lpDesktop = "winsta0\\default";
 
-            if (!CreateEnvironmentBlock(ref pEnv, hUserToken, false))
-            {
-                return false;
-                //throw new ProcessCreationException("StartProcessAsCurrentUser: CreateEnvironmentBlock failed.");
+            if (!CreateEnvironmentBlock(ref pEnv, hUserToken, false)) {
+                result.Success = false;
+                result.LastErrors = GetLastErrors();
+                return result;
             }
 
-            if (workDir != null)
-            {
+            if (workDir != null) {
                 Directory.SetCurrentDirectory(workDir);
             }
 
@@ -305,28 +271,53 @@ public static class ClientAppProcessController
                 pEnv,
                 workDir, // Working directory
                 ref startInfo,
-                out procInfo))
-            {
-                iResultOfCreateProcessAsUser = Marshal.GetLastWin32Error();
-                return false;
-                //throw new ProcessCreationException("StartProcessAsCurrentUser: CreateProcessAsUser failed.  Error Code -" + iResultOfCreateProcessAsUser);
+                out procInfo)
+            ) {
+                result.Success = false;
+                result.LastErrors = GetLastErrors();
+                return result;
             }
-
-            iResultOfCreateProcessAsUser = Marshal.GetLastWin32Error();
-        }
-        finally
-        {
+            result.LastErrors = GetLastErrors();
+        } finally {
             CloseHandle(hUserToken);
-            if (pEnv != IntPtr.Zero)
-            {
+            if (pEnv != IntPtr.Zero) {
                 DestroyEnvironmentBlock(pEnv);
             }
-            CloseHandle(procInfo.hThread);
-            CloseHandle(procInfo.hProcess);
+            //CloseHandle(procInfo.hThread);
+            //CloseHandle(procInfo.hProcess);
         }
 
-        return true;
+        result.Success = result.ProcInfo.hProcess != IntPtr.Zero;
+        result.ProcInfo = procInfo;
+        return result;
     }
 
+    public static void CloseProcInfoHandles(PROCESS_INFORMATION procInfo) {
+        CloseHandle(procInfo.hThread);
+        CloseHandle(procInfo.hProcess);
+    }
+
+    private static Tuple<string, int>[] GetLastErrors() {
+        Tuple<string, int>[] errors = new[] {
+            new Tuple<string,int>("GetLastWin32Error", Marshal.GetLastWin32Error()),
+            new Tuple<string,int>("GetLastSystemError", Marshal.GetLastSystemError()),
+            new Tuple<string,int>("GetLastPInvokeError", Marshal.GetLastPInvokeError()),
+            new Tuple<string,int>("GetHRForLastWin32Error", Marshal.GetHRForLastWin32Error()),
+        };
+        return errors;
+    }
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct PROCESS_INFORMATION {
+    public IntPtr hProcess;
+    public IntPtr hThread;
+    public uint dwProcessId;
+    public uint dwThreadId;
+}
+
+public class StartProcessAsCurrentUserResult {
+    public bool Success { get; set; }
+    public Tuple<string, int>[] LastErrors { get; set; }
+    public PROCESS_INFORMATION ProcInfo { get; set; }
+}
