@@ -193,6 +193,8 @@ public class Worker : BackgroundService {
     }
 
     private void StartClientAppIfNotStarted() {
+        // TODO: For testing only
+        return;
         // TODO: Get path using current path - the client app is in subfolder of current service executable path
         var clientAppProcessExecutableFullPath = Path.GetFullPath(Path.Combine(".", "ClientApp\\Ccs3ClientApp.exe"));
 
