@@ -5,7 +5,7 @@ using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
-namespace Ccs3ClientAppWindowsService;
+namespace Ccs3ClientApp;
 
 public class WebSocketConnector {
     public event EventHandler<ConnectedEventArgs>? Connected;

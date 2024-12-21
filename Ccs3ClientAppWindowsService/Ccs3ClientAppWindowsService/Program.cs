@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
 using System.Net;
+using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Ccs3ClientAppWindowsService;
@@ -11,6 +12,7 @@ public class Program {
     private static ILogger _logger;
     private static readonly string _serviceName = "Ccs3ClientAppWindowsService";
     private static readonly CertificateHelper _certificateHelper = new();
+    private static readonly List<WebSocket> _webSockets = new();
 
     public static void Main(string[] args) {
         var builder = CreateAppBuilder(args);
@@ -21,6 +23,43 @@ public class Program {
         Directory.SetCurrentDirectory(builder.Environment.ContentRootPath);
         app.UseDefaultFiles();
         app.UseStaticFiles();
+        //var webSocketOptions = new WebSocketOptions {
+        //    KeepAliveInterval = TimeSpan.FromMinutes(2),
+        //};
+        app.UseWebSockets();
+        app.Use(async (context, next) => {
+            if (context.WebSockets.IsWebSocketRequest) {
+                try {
+
+                    WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                    _webSockets.Add(webSocket);
+                    var socketFinishedTcs = new TaskCompletionSource<object>();
+
+                    //BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
+
+                    await socketFinishedTcs.Task;
+                } catch (Exception ex) {
+                    // TODO: Cannot accept websocket
+                }
+                //await Echo(webSocket);
+            } else {
+                //context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                await next(context);
+            }
+
+
+            //if (context.Request.Path == "/ws") {
+            //    //if (context.WebSockets.IsWebSocketRequest) {
+            //    //    using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+            //    //    //await Echo(webSocket);
+            //    //} else {
+            //    //    context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            //    //}
+            //} else {
+            //    await next(context);
+            //}
+
+        });
         app.Run();
     }
 

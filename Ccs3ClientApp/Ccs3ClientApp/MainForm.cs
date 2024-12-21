@@ -51,12 +51,72 @@ namespace Ccs3ClientApp {
 
         private void Initialize() {
             _state = new MainFormState();
+            _state.CancellationToken = new CancellationToken();
             _state.DesktopService = new RestrictedAccessDesktopService();
+            string? localServiceUriString = Environment.GetEnvironmentVariable("CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL") ?? "https://localhost:30000";
+            localServiceUriString = "wss://127.0.0.1:30000";
+            bool localServiceUriParsed = Uri.TryCreate(localServiceUriString, UriKind.Absolute, out Uri? localServiceUri);
+            if (localServiceUri is not null) {
+                if (localServiceUri.Scheme != Uri.UriSchemeWss) {
+                    // The scheme is not wss - use wss
+                    UriBuilder ub = new(localServiceUri);
+                    ub.Scheme = Uri.UriSchemeWss;
+                    localServiceUri = ub.Uri;
+                }
+                _state.LocalServiceUri = localServiceUri;
+                _state.LocalServiceConnector = new WebSocketConnector();
+                WebSocketConnectorConfig connectorCfg = new() {
+                    CancellationToken = _state.CancellationToken,
+                    // TODO: For now we will not use ClientApp certificate
+                    ClientCertificate = null,
+                    // TODO: For now we will trust all server certificates
+                    ServerCertificateThumbprint = null,
+                    TrustAllServerCertificates = true,
+                    ReconnectDelay = TimeSpan.FromSeconds(3),
+                    ServerUri = localServiceUri,
+                };
+                _state.LocalServiceConnector.Initialize(connectorCfg);
+                _state.LocalServiceConnector.Connected += LocalServiceConnector_Connected;
+                _state.LocalServiceConnector.ConnectError += LocalServiceConnector_ConnectError;
+                _state.LocalServiceConnector.Disconnected += LocalServiceConnector_Disconnected;
+                _state.LocalServiceConnector.ValidatingRemoteCertificate += LocalServiceConnector_ValidatingRemoteCertificate;
+                _state.LocalServiceConnector.DataReceived += LocalServiceConnector_DataReceived;
+                _state.LocalServiceConnector.ReceiveError += LocalServiceConnector_ReceiveError;
+                _state.LocalServiceConnector.SendDataError += LocalServiceConnector_SendDataError;
+                _state.LocalServiceConnector.Start();
+            } else {
+                // TODO: Cannot parse local service Uri string
+            }
+        }
+
+        private void LocalServiceConnector_SendDataError(object? sender, SendDataErrorEventArgs e) {
+        }
+
+        private void LocalServiceConnector_ReceiveError(object? sender, ReceiveErrorEventArgs e) {
+        }
+
+        private void LocalServiceConnector_DataReceived(object? sender, DataReceivedEventArgs e) {
+        }
+
+        private void LocalServiceConnector_ValidatingRemoteCertificate(object? sender, ValidatingRemoteCertificateArgs e) {
+        }
+
+        private void LocalServiceConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
+        }
+
+        private void LocalServiceConnector_ConnectError(object? sender, ConnectErrorEventArgs e) {
+        }
+
+        private void LocalServiceConnector_Connected(object? sender, ConnectedEventArgs e) {
+            
         }
 
         private class MainFormState {
             public RestrictedAccessDesktopService DesktopService { get; set; }
             public readonly string RestrictedAccessDesktopName = "RestrictedAccessDesktop";
+            public Uri LocalServiceUri { get; set; }
+            public WebSocketConnector LocalServiceConnector { get; set; }
+            public CancellationToken CancellationToken { get; set; }
         }
     }
 }
