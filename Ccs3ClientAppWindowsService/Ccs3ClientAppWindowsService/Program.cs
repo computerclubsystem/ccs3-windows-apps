@@ -147,6 +147,7 @@ public class Program {
             return null;
         }
         string localCertificateCNToSearchFor = listenUri.Host;
+        _logger.LogInformation("Searching for certificate for {0}", localCertificateCNToSearchFor);
         var certResult = _certificateHelper.GetPersonalCertificateIssuedByTrustedRootCA(caCertThumbprint, localCertificateCNToSearchFor);
         if (!certResult.IssuerFound) {
             _logger.LogCritical("Trusted root certificate with thumbprint '{0}' was not found", caCertThumbprint);
@@ -156,6 +157,7 @@ public class Program {
             _logger.LogCritical("Local service certificate with subject '{0}' issued by certificate with thumbprint {1} was not found", localCertificateCNToSearchFor, caCertThumbprint);
             return null;
         }
+        _logger.LogInformation("Personal certificate found {0} ({1})", certResult.PersonalCertificate.Subject, certResult.PersonalCertificate.Thumbprint);
         return certResult.PersonalCertificate;
         //var clientCert 
         //using X509Store trustedRootStore = new X509Store(StoreName.Root, StoreLocation.LocalMachine, OpenFlags.ReadOnly);
