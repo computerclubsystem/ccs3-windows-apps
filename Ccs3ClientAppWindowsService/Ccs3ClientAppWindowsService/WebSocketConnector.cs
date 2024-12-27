@@ -130,7 +130,7 @@ public class WebSocketConnector {
     }
 
     private bool ValidateRemoteCertificate(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) {
-        if (_config.TrustAllServerCertificates == true) {
+        if (_config.TrustAllServerCertificates is true) {
             return true;
         }
         ValidatingRemoteCertificate?.Invoke(

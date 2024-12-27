@@ -75,6 +75,9 @@ public class Worker : BackgroundService {
             ServerUri = pcConnectorBaseUri,
             ServerCertificateThumbprint = pcConnectorCertificateThumbprint,
         };
+#if DEBUG
+        wsConnectorConfig.TrustAllServerCertificates = true;
+#endif
         _wsConnector.Initialize(wsConnectorConfig);
         _wsConnector.Start();
     }

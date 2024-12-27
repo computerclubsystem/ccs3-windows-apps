@@ -100,7 +100,7 @@ public class Program {
                 return;
             }
             IPAddress preferredIPAddress = GetPreferredIPAddressForListen(resolvedIPAddresses);
-            _logger.LogInformation("Trying to listen to '{0}:{1}' ('{2}')", preferredIPAddress.ToString(), listenUri.Port, listenUri.ToString());
+            _logger.LogInformation("Trying to listen on '{0}' ('{1}:{2}')", listenUri.ToString(), preferredIPAddress.ToString(), listenUri.Port);
             serverOptions.Listen(preferredIPAddress, listenUri.Port, listenOptions => {
                 listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3;
                 listenOptions.UseHttps(httpsConfig => {
