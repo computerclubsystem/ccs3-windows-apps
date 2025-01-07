@@ -304,10 +304,10 @@ internal class Program {
         Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe");
         Console.WriteLine();
         Console.WriteLine("- Installs the CCS3 Client App Bootstrap Windows Service and also sets the environment variables using IP addresses:");
-        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://192.168.6.9:65500 --pc-connector-service-base-url wss://192.168.6.9:65501 --client-app-windows-service-local-base-url https://localhost:30000 --certificate-authority-issuer-certificate-thumbprint 79e03156810b9e15faf79e16497e25e39a7e7095 --pc-connector-service-certificate-thumbprint 7E8285C8EAB99CFFA15BEBAAA2E6D6A99E95BDD2");
+        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://192.168.6.9:65500 --pc-connector-service-base-url wss://192.168.6.9:65501 --client-app-windows-service-local-base-url https://localhost:30000 --certificate-authority-issuer-certificate-thumbprint 79e03156810b9e15faf79e16497e25e39a7e7095 --pc-connector-service-certificate-thumbprint F5848FD93B1CC629CF56FEBAB21DBD4A03C73ECF");
         Console.WriteLine();
         Console.WriteLine("- Installs the CCS3 Client App Bootstrap Windows Service and also sets the environment variables using host names:");
-        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://ccs3-server-pc:65500 --pc-connector-service-base-url wss://ccs3-server-pc:65501 --client-app-windows-service-local-base-url https://localhost:30000 --certificate-authority-issuer-certificate-thumbprint 79e03156810b9e15faf79e16497e25e39a7e7095 --pc-connector-service-certificate-thumbprint 7E8285C8EAB99CFFA15BEBAAA2E6D6A99E95BDD2");
+        Console.WriteLine("Ccs3ClientAppBootstrapWindowsServiceInstaller.exe --static-files-service-base-url https://ccs3-server-pc:65500 --pc-connector-service-base-url wss://ccs3-server-pc:65501 --client-app-windows-service-local-base-url https://localhost:30000 --certificate-authority-issuer-certificate-thumbprint 79e03156810b9e15faf79e16497e25e39a7e7095 --pc-connector-service-certificate-thumbprint F5848FD93B1CC629CF56FEBAB21DBD4A03C73ECF");
         Console.WriteLine();
         Console.WriteLine("----------------------------------------------------");
         Console.WriteLine();
