@@ -349,6 +349,7 @@ public class Worker : BackgroundService {
     }
 
     private void StartClientAppIfNotStarted() {
+        return;
         // TODO: For testing only
         //#if DEBUG
         //        return;
