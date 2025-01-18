@@ -115,8 +115,8 @@ public class Worker : BackgroundService {
 
     public async Task HandleConnectedWebSocket(WebSocket webSocket) {
         return;
-        ExecuteIfTraceIsEnabled(() => {
-            _logger.LogTrace("Local client WebSocket connected");
+        ExecuteIfDebugIsEnabled(() => {
+            _logger.LogDebug("Local client WebSocket connected");
         });
         if (_state.CancellationToken.IsCancellationRequested) {
             return;
@@ -129,30 +129,40 @@ public class Worker : BackgroundService {
         WebSocketReceiveResult? receiveResult = null;
         while (!_state.CancellationToken.IsCancellationRequested && webSocket.State == WebSocketState.Open) {
             try {
+                ExecuteIfDebugIsEnabled(() => {
+                    _logger.LogDebug(new EventId(100), "Waiting to receive data on local client WebSocket connection");
+                });
                 receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), _state.CancellationToken);
+                ExecuteIfDebugIsEnabled(() => {
+                    _logger.LogDebug(new EventId(100), "Data received");
+                });
                 if (receiveResult.MessageType == WebSocketMessageType.Close || receiveResult.Count == 0) {
+                    ExecuteIfDebugIsEnabled(() => {
+                        _logger.LogDebug(new EventId(100), "Received data indicates close");
+                    });
                     break;
                 } else {
                     if (receiveResult.EndOfMessage) {
                         string stringData = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
-                        ExecuteIfTraceIsEnabled(() => {
-                            _logger.LogTrace(new EventId(5, "Received message from local client WebSocket"), "Received message from local client: {0}", stringData);
+                        ExecuteIfDebugIsEnabled(() => {
+                            _logger.LogDebug(new EventId(100), "Received message from local client: {0}", stringData);
                         });
                         ProcessLocalClientWebSocketMessage(wsState, stringData);
                     } else {
                         // TODO: Not entire message is received - collect the data and process only after the entire message is recevied
-                        ExecuteIfTraceIsEnabled(() => {
-                            _logger.LogTrace("Partial message received from local client: {0}", buffer);
+                        ExecuteIfDebugIsEnabled(() => {
+                            _logger.LogDebug(new EventId(100), "Partial message received from local client: {0}", buffer);
                         });
                     }
                 }
             } catch (Exception ex) {
-                _logger.LogError(ex, "Error on receiving from local client WebSocket");
+                _logger.LogError(new EventId(100), ex, "Error on receiving from local client WebSocket");
                 break;
             }
         }
-        ExecuteIfTraceIsEnabled(() => {
-            _logger.LogTrace(
+        ExecuteIfDebugIsEnabled(() => {
+            _logger.LogDebug(
+                new EventId(100),
                 "Closing local client WebSocket. WebSocket state: {0}, CancellationRequested: {1}, Result message type: {2}, Result CloseStatus: {3}, Result CloseStatusDescription: {4}",
                 webSocket.State,
                 _state.CancellationToken.IsCancellationRequested,
@@ -271,8 +281,8 @@ public class Worker : BackgroundService {
     private void _wsConnector_DataReceived(object? sender, DataReceivedEventArgs e) {
         bool traceEnabled = _logger.IsEnabled(LogLevel.Trace);
         if (traceEnabled) {
-            ExecuteIfTraceIsEnabled(() => {
-                _logger.LogTrace("WebSocket data received. Bytes length: {0}, bytes: {1}",
+            ExecuteIfDebugIsEnabled(() => {
+                _logger.LogDebug("WebSocket data received. Bytes length: {0}, bytes: {1}",
                     e.Data.Length,
                     BitConverter.ToString(e.Data.ToArray())
                 );
@@ -281,7 +291,7 @@ public class Worker : BackgroundService {
         try {
             string stringData = Encoding.UTF8.GetString(e.Data.ToArray());
             if (traceEnabled) {
-                _logger.LogTrace("Received string '{0}'", stringData);
+                _logger.LogDebug("Received string '{0}'", stringData);
             }
             try {
                 ProcessWebSocketConnectorReceivedData(stringData);
@@ -327,17 +337,20 @@ public class Worker : BackgroundService {
     }
 
     private async void SendToAllLocalClients(string data) {
+        if (_state.CancellationToken.IsCancellationRequested) {
+            return;
+        }
         byte[] bytes = Encoding.UTF8.GetBytes(data);
         ArraySegment<byte> arraySegment = new ArraySegment<byte>(bytes);
         foreach (var kvp in _state.WebSockets.Where(x => x.Key.State == WebSocketState.Open)) {
             var ws = kvp.Key;
             try {
-                ExecuteIfTraceIsEnabled(() => {
-                    _logger.LogTrace(new EventId(6, "Sending data to client WebSocket"), "Sending data to client WebSocket: {0}", data);
+                ExecuteIfDebugIsEnabled(() => {
+                    _logger.LogDebug(new EventId(100), "Sending data to client WebSocket: {0}", data);
                 });
                 await ws.SendAsync(arraySegment, WebSocketMessageType.Text, true, _state.CancellationToken);
             } catch (Exception ex) {
-                this._logger.LogError(ex, "Can't send data {0} to local client", data);
+                this._logger.LogError(new EventId(100), ex, "Can't send data {0} to local client", data);
             }
         }
     }
@@ -436,7 +449,7 @@ public class Worker : BackgroundService {
 
         var sessions = ClientAppProcessController.GetSessions();
         LogClientAppProcessData(() => {
-            if (_logger.IsEnabled(LogLevel.Trace)) {
+            if (_logger.IsEnabled(LogLevel.Debug)) {
                 StringBuilder sb = new();
                 foreach (var session in sessions) {
                     sb.AppendLine("Session id: " + session.SessionID);
@@ -444,33 +457,33 @@ public class Worker : BackgroundService {
                     sb.AppendLine("Session state: " + session.State);
                     sb.AppendLine("-----------------");
                 }
-                _logger.LogTrace("Sessions: {sessions}", sb.ToString());
+                _logger.LogDebug("Sessions: {sessions}", sb.ToString());
             }
         });
         ClientAppProcessController.WTS_SESSION_INFO? activeSession = sessions.FirstOrDefault(x => x.State == ClientAppProcessController.WTS_CONNECTSTATE_CLASS.WTSActive);
         if (activeSession is not null) {
             LogClientAppProcessData(() => {
-                _logger.LogTrace("ActiveSession: {0}", activeSession.Value.SessionID);
+                _logger.LogDebug("ActiveSession: {0}", activeSession.Value.SessionID);
             });
             // TODO: Check if the app already runs
             Process? clientAppProcess = GetProcessByExecutablePath(clientAppProcessExecutableFullPath, (int)activeSession.Value.SessionID);
             if (clientAppProcess == null) {
                 LogClientAppProcessData(() => {
-                    _logger.LogTrace("It seems that process with path {0} does not run in session {1}", clientAppProcessExecutableFullPath, activeSession.Value.SessionID);
+                    _logger.LogDebug("It seems that process with path {0} does not run in session {1}", clientAppProcessExecutableFullPath, activeSession.Value.SessionID);
                 });
                 if (_startProcessAsCurrentUserResult != null && _startProcessAsCurrentUserResult.ProcInfo.hProcess != 0) {
                     ClientAppProcessController.CloseProcInfoHandles(_startProcessAsCurrentUserResult.ProcInfo);
                 }
                 LogClientAppProcessData(() => {
-                    _logger.LogTrace("Trying to start the process: {clientAppProcessExecutableFullPath}", clientAppProcessExecutableFullPath);
+                    _logger.LogDebug("Trying to start the process: {clientAppProcessExecutableFullPath}", clientAppProcessExecutableFullPath);
                 });
                 _startProcessAsCurrentUserResult = ClientAppProcessController.StartProcessAsCurrentUser(clientAppProcessExecutableFullPath, null, null, true, _logger);
                 if (_startProcessAsCurrentUserResult.Success) {
                     LogClientAppProcessData(() => {
-                        _logger.LogTrace("Process handle: {hProcess}", _startProcessAsCurrentUserResult.ProcInfo.hProcess);
+                        _logger.LogDebug("Process handle: {hProcess}", _startProcessAsCurrentUserResult.ProcInfo.hProcess);
                     });
                     LogClientAppProcessData(() => {
-                        _logger.LogTrace("Process {clientAppProcessExecutableFullPath} started. PID: {pid}", clientAppProcessExecutableFullPath, _startProcessAsCurrentUserResult.ProcInfo.dwProcessId);
+                        _logger.LogDebug("Process {clientAppProcessExecutableFullPath} started. PID: {pid}", clientAppProcessExecutableFullPath, _startProcessAsCurrentUserResult.ProcInfo.dwProcessId);
                     });
                     // TODO: Should we call WaitForInputIdle to know when the process has finished initialization ?
                     if (_startProcessAsCurrentUserResult.ProcInfo.hProcess != 0) {
@@ -514,8 +527,8 @@ public class Worker : BackgroundService {
         }
         if (_deviceConfigMsg.Body is null
             || _deviceConfigMsg.Body.PingInterval <= 0) {
-            ExecuteIfTraceIsEnabled(() => {
-                _logger.LogTrace("Can't ping server. Device configuration ping interval {0} is invalid", _deviceConfigMsg.Body?.PingInterval);
+            ExecuteIfDebugIsEnabled(() => {
+                _logger.LogDebug("Can't ping server. Device configuration ping interval {0} is invalid", _deviceConfigMsg.Body?.PingInterval);
             });
             return;
         }
@@ -551,13 +564,15 @@ public class Worker : BackgroundService {
         ReadOnlyMemory<byte> bytes = new(Encoding.UTF8.GetBytes(serialized));
         _state.LastLocalClientDataSentAt = GetNow();
         try {
-            ExecuteIfTraceIsEnabled(() => {
-                _logger.LogTrace("Sending local client notification message: {0}", serialized);
+            ExecuteIfDebugIsEnabled(() => {
+                _logger.LogDebug(new EventId(100), "Sending local client notification message: {0}", serialized);
             });
             await ws.SendAsync(bytes, WebSocketMessageType.Text, true, _state.CancellationToken);
             return true;
         } catch (Exception ex) {
-            _logger.LogError(ex, "Can't send LocalClientNotificationMessage message");
+            ExecuteIfDebugIsEnabled(() => {
+                _logger.LogError(new EventId(100), ex, "Can't send LocalClientNotificationMessage message");
+            });
             //SendDataError?.Invoke(this, new SendDataErrorEventArgs { Exception = ex });
             return false;
         }
@@ -568,8 +583,8 @@ public class Worker : BackgroundService {
         return DateTimeOffset.Now;
     }
 
-    private void ExecuteIfTraceIsEnabled(Action action) {
-        if (!_logger.IsEnabled(LogLevel.Trace)) {
+    private void ExecuteIfDebugIsEnabled(Action action) {
+        if (!_logger.IsEnabled(LogLevel.Debug)) {
             return;
         }
         action();
