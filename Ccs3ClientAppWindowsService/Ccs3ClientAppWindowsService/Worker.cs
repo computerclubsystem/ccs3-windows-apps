@@ -47,7 +47,7 @@ public class Worker : BackgroundService {
         StartWebSocketConnector(stoppingToken);
         while (!stoppingToken.IsCancellationRequested) {
             try {
-                StartClientAppIfNotStarted();
+                //StartClientAppIfNotStarted();
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error on StartClientAppIfNotStarted");
             }
@@ -57,7 +57,7 @@ public class Worker : BackgroundService {
         }
         // Give 5 seconds to stop all client processes
         var startTime = GetNow();
-        _logger.LogInformation("Killing client instances");
+        _logger.LogInformation(new EventId(7, "Killing client instances"), "Killing client instances");
         while (true) {
             bool instanceStopped = KillClientAppProcess();
             if (!instanceStopped) {
@@ -114,6 +114,7 @@ public class Worker : BackgroundService {
     }
 
     public async Task HandleConnectedWebSocket(WebSocket webSocket) {
+        return;
         ExecuteIfTraceIsEnabled(() => {
             _logger.LogTrace("Local client WebSocket connected");
         });
