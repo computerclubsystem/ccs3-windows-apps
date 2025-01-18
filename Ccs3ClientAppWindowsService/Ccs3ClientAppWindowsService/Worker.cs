@@ -48,7 +48,7 @@ public class Worker : BackgroundService {
         //StartWebSocketConnector(stoppingToken);
         while (!stoppingToken.IsCancellationRequested) {
             try {
-                //StartClientAppIfNotStarted();
+                StartClientAppIfNotStarted();
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error on StartClientAppIfNotStarted");
             }
