@@ -405,9 +405,23 @@ namespace Ccs3ClientApp {
         }
 
         private void btnTest_Click(object sender, EventArgs e) {
-            lblTest.Text = "ÀÑÄÔ";
-            btnTest.Text = "ßÂÅÐ";
-            cmbTest.Items.Add("ÇÖÆÁ");
+            Task.Run(() => {
+                //lblTest.Text = "ÀÑÄÔ";
+                //btnTest.Text = "ßÂÅÐ";
+                //cmbTest.Items.Add("ÇÖÆÁ");
+                _state.StatusNotificationMessage = new LocalClientStatusNotificationMessage {
+                    Body = new LocalClientStatusNotificationMessageBody() {
+                        Started = true,
+                        Amounts = new Messages.Types.DeviceStatusAmounts {
+                            RemainingSeconds = Random.Shared.Next(100, 50000),
+                            TotalSum = (decimal)Math.Round(Random.Shared.NextDouble() * 156, 2),
+                            TotalTime = Random.Shared.Next(100, 2000),
+                            StartedAt = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+                        }
+                    }
+                };
+                ProcessCurrentStatus();
+            });
         }
     }
 }

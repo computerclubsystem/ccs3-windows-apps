@@ -13,7 +13,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
 	<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
 	<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
-	<AssemblyVersion>3.0.0.3</AssemblyVersion>
+	<AssemblyVersion>3.0.0.4</AssemblyVersion>
 	<RepositoryUrl>https://github.com/computerclubsystem/ccs3-windows-apps</RepositoryUrl>
 	<NeutralLanguage>bg-BG</NeutralLanguage>
   </PropertyGroup>
