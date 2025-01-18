@@ -11,6 +11,8 @@
 	<WebPublishMethod>FileSystem</WebPublishMethod>
 	<PublishProvider>FileSystem</PublishProvider>
     <UserSecretsId>dotnet-Ccs3ClientAppWindowsService-609a5ad0-50a8-4f46-9970-6d3c1940226e</UserSecretsId>
+	<AssemblyVersion>3.0.0.0</AssemblyVersion>
+	<RepositoryUrl>https://github.com/computerclubsystem/ccs3-windows-apps</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
