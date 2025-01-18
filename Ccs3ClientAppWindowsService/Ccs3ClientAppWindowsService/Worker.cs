@@ -83,8 +83,8 @@ public class Worker : BackgroundService {
 
     private bool KillClientAppProcess() {
         int processId;
-        if (_startProcessAsCurrentUserResult != null && _startProcessAsCurrentUserResult.ProcInfo.dwThreadId != 0) {
-            processId = (int)_startProcessAsCurrentUserResult.ProcInfo.dwThreadId;
+        if (_startProcessAsCurrentUserResult != null && _startProcessAsCurrentUserResult.ProcInfo.dwProcessId != 0) {
+            processId = (int)_startProcessAsCurrentUserResult.ProcInfo.dwProcessId;
         } else {
             processId = 0;
         }
