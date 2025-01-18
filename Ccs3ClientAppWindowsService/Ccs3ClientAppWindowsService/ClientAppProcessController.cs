@@ -221,7 +221,10 @@ public static class ClientAppProcessController {
         if (tokenResult != 0) {
             // Convert the impersonation token to a primary token
             bResult = DuplicateTokenEx(hImpersonationToken, 0, IntPtr.Zero,
-                (int)SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation, (int)TOKEN_TYPE.TokenPrimary,
+                // TODO: SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation causes bulgarian letters set to user interface from code (not from Form properties)
+                //       to appear gibberish. Changing to SECURITY_IMPERSONATION_LEVEL.SecurityIdentification seems to fixes the issue
+                //(int)SECURITY_IMPERSONATION_LEVEL.SecurityImpersonation, (int)TOKEN_TYPE.TokenPrimary,
+                (int)SECURITY_IMPERSONATION_LEVEL.SecurityIdentification, (int)TOKEN_TYPE.TokenPrimary,
                 ref phUserToken);
 
             CloseHandle(hImpersonationToken);
