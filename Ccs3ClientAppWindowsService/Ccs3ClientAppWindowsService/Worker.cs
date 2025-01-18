@@ -115,7 +115,6 @@ public class Worker : BackgroundService {
     }
 
     public async Task HandleConnectedWebSocket(WebSocket webSocket) {
-        return;
         ExecuteIfTraceIsEnabled(() => {
             _logger.LogTrace("Local client WebSocket connected");
         });
