@@ -40,7 +40,10 @@ public class WebSocketConnector {
     }
 
     private async void ConnectWebSocket(Uri uri) {
-        while (true) {
+        if (_config.CancellationToken.IsCancellationRequested) {
+            return;
+        }
+        while (!_config.CancellationToken.IsCancellationRequested) {
             try {
                 _state.WebSocket = new ClientWebSocket();
                 if (_config.ClientCertificate is not null) {
@@ -60,9 +63,12 @@ public class WebSocketConnector {
     }
 
     private async void StartReceiving() {
+        if (_config.CancellationToken.IsCancellationRequested) {
+            return;
+        }
         //List<byte> message = new List<byte>();
         byte[] buffer = new byte[1 * 1024 * 1024];
-        while (true) {
+        while (!_config.CancellationToken.IsCancellationRequested) {
             Memory<byte> memory = new(buffer);
             try {
                 var result = await _state.WebSocket.ReceiveAsync(memory, _config.CancellationToken);
@@ -116,10 +122,20 @@ public class WebSocketConnector {
     }
 
     private async Task DelayReconnect() {
-        await Task.Delay(_config.ReconnectDelay, _config.CancellationToken);
+        if (_config.CancellationToken.IsCancellationRequested) {
+            return;
+        }
+        try {
+            await Task.Delay(_config.ReconnectDelay, _config.CancellationToken);
+        } catch (Exception ex) {
+
+        }
     }
 
     public async Task<bool> SendData(ReadOnlyMemory<byte> bytes) {
+        if (_config.CancellationToken.IsCancellationRequested) {
+            return false;
+        }
         try {
             await _state.WebSocket.SendAsync(bytes, WebSocketMessageType.Text, true, _config.CancellationToken);
             return true;

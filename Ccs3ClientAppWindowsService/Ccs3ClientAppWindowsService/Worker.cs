@@ -51,8 +51,28 @@ public class Worker : BackgroundService {
             } catch (Exception ex) {
                 _logger.LogError(ex, "Error on StartClientAppIfNotStarted");
             }
-            await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            if (!stoppingToken.IsCancellationRequested) {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
         }
+        // Give 5 seconds to stop all client processes
+        var startTime = GetNow();
+        while (true) {
+            bool instanceStopped = KillClientAppProcess();
+            if (!instanceStopped) {
+                // Nothing was stopped - probably it does not run - exit
+                break;
+            }
+            // Client process instance stopped - check if we are off the time limit
+            var diff = GetNow() - startTime;
+            if (diff > TimeSpan.FromSeconds(5)) {
+                // 5 seconds passed - stop retries
+                break;
+            }
+            // If the timeout has not passed and an instance was killed, try again
+            // to kill other instances if any
+        }
+
         Environment.Exit(0);
     }
 
@@ -61,10 +81,44 @@ public class Worker : BackgroundService {
         return base.StopAsync(cancellationToken);
     }
 
+    private bool KillClientAppProcess() {
+        int processId;
+        if (_startProcessAsCurrentUserResult != null && _startProcessAsCurrentUserResult.ProcInfo.dwThreadId != 0) {
+            processId = (int)_startProcessAsCurrentUserResult.ProcInfo.dwThreadId;
+        } else {
+            processId = 0;
+        }
+        try {
+            Process? proc = null;
+            if (processId != 0) {
+                _logger.LogWarning("Getting process with id {0}", processId);
+                proc = Process.GetProcessById(processId);
+            }
+            if (proc == null) {
+                _logger.LogWarning("Process with id {0} not found.", processId);
+                string clientExecutablePath = GetClientExecutablePath();
+                proc = GetProcessByExecutablePath(clientExecutablePath);
+                if (proc == null) {
+                    _logger.LogWarning("Process with path {0} not found.", clientExecutablePath);
+                }
+            }
+            if (proc != null) {
+                proc.Kill(true);
+                return true;
+            }
+        } catch (Exception ex) {
+            _logger.LogError(ex, "Can't kill the client process");
+        }
+        return false;
+    }
+
     public async Task HandleConnectedWebSocket(WebSocket webSocket) {
         ExecuteIfTraceIsEnabled(() => {
             _logger.LogTrace("Local client WebSocket connected");
         });
+        if (_state.CancellationToken.IsCancellationRequested) {
+            return;
+        }
         ClientWebSocketState wsState = new() { WebSocket = webSocket };
         _state.WebSockets.TryAdd(webSocket, wsState);
         SendConfigurationNotificationMessage(webSocket);
@@ -348,7 +402,15 @@ public class Worker : BackgroundService {
         return certResult.PersonalCertificate;
     }
 
+    private string GetClientExecutablePath() {
+        var clientAppProcessExecutableFullPath = Path.GetFullPath(Path.Combine(".", "Ccs3ClientApp\\Ccs3ClientApp.exe"));
+        return clientAppProcessExecutableFullPath;
+    }
+
     private void StartClientAppIfNotStarted() {
+        if (_state.CancellationToken.IsCancellationRequested) {
+            return;
+        }
         if (_deviceConfigMsg == null) {
             // Still did not received initial messages from server - probably this device 
             // is not part of the system / not active / no connection to the server
@@ -365,7 +427,7 @@ public class Worker : BackgroundService {
 
         // TODO: We could use environment variable
         // Get path using current path - the client app is in subfolder of current service executable path
-        var clientAppProcessExecutableFullPath = Path.GetFullPath(Path.Combine(".", "Ccs3ClientApp\\Ccs3ClientApp.exe"));
+        var clientAppProcessExecutableFullPath = GetClientExecutablePath();
 
         var sessions = ClientAppProcessController.GetSessions();
         LogClientAppProcessData(() => {
@@ -386,7 +448,7 @@ public class Worker : BackgroundService {
                 _logger.LogTrace("ActiveSession: {0}", activeSession.Value.SessionID);
             });
             // TODO: Check if the app already runs
-            Process? clientAppProcess = GetProcessByExecutablePath((int)activeSession.Value.SessionID, clientAppProcessExecutableFullPath);
+            Process? clientAppProcess = GetProcessByExecutablePath(clientAppProcessExecutableFullPath, (int)activeSession.Value.SessionID);
             if (clientAppProcess == null) {
                 LogClientAppProcessData(() => {
                     _logger.LogTrace("It seems that process with path {0} does not run in session {1}", clientAppProcessExecutableFullPath, activeSession.Value.SessionID);
@@ -439,6 +501,9 @@ public class Worker : BackgroundService {
     }
 
     private void PingServer() {
+        if (_state.CancellationToken.IsCancellationRequested) {
+            return;
+        }
         if (_deviceConfigMsg is null) {
             return;
         }
@@ -517,8 +582,13 @@ public class Worker : BackgroundService {
         }
         logAction();
     }
-    private Process? GetProcessByExecutablePath(int sessionId, string executablePath) {
-        var processes = Process.GetProcesses().Where(x => x.SessionId == sessionId);
+    private Process? GetProcessByExecutablePath(string executablePath, int sessionId = -1) {
+        IEnumerable<Process> processes;
+        if (sessionId != -1) {
+            processes = Process.GetProcesses();
+        } else {
+            processes = Process.GetProcesses().Where(x => x.SessionId == sessionId);
+        }
         Process? processByExecutablePath = null;
         foreach (var proc in processes) {
             // Access to some MainModule throws AccessDenied exception
