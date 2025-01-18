@@ -97,6 +97,8 @@ public class Worker : BackgroundService {
             if (proc == null) {
                 _logger.LogWarning("Process with id {0} not found.", processId);
                 string clientExecutablePath = GetClientExecutablePath();
+                List<string> allProcessPaths = GetAllProcessesExecutablePaths();
+                _logger.LogDebug("All processes paths: {0}{1}", Environment.NewLine, string.Join(Environment.NewLine, allProcessPaths));
                 proc = GetProcessByExecutablePath(clientExecutablePath);
                 if (proc == null) {
                     _logger.LogWarning("Process with path {0} not found.", clientExecutablePath);
@@ -409,6 +411,8 @@ public class Worker : BackgroundService {
     }
 
     private void StartClientAppIfNotStarted() {
+        // TODO: What if the process already runs ? Should we store its id and use it later when we want to kill it ?
+        //       And what about multiple instances of the process ?
         if (_state.CancellationToken.IsCancellationRequested) {
             return;
         }
@@ -584,6 +588,21 @@ public class Worker : BackgroundService {
         }
         logAction();
     }
+
+    private List<string> GetAllProcessesExecutablePaths() {
+        List<string> result = new();
+        var processes = Process.GetProcesses();
+        foreach (var proc in processes) {
+            // Access to some MainModule throws AccessDenied exception
+            try {
+                if (proc.MainModule is not null) {
+                    result.Add(proc.MainModule.FileName);
+                }
+            } catch { }
+        }
+        return result;
+    }
+
     private Process? GetProcessByExecutablePath(string executablePath, int sessionId = -1) {
         IEnumerable<Process> processes;
         if (sessionId != -1) {
