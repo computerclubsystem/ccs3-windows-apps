@@ -412,11 +412,12 @@ public class Worker : BackgroundService {
         if (_state.CancellationToken.IsCancellationRequested) {
             return;
         }
-        if (_deviceConfigMsg == null) {
-            // Still did not received initial messages from server - probably this device 
-            // is not part of the system / not active / no connection to the server
-            return;
-        }
+        // TODO: Bring this back
+        //if (_deviceConfigMsg == null) {
+        //    // Still did not received initial messages from server - probably this device 
+        //    // is not part of the system / not active / no connection to the server
+        //    return;
+        //}
         // TODO: For testing only
         //#if DEBUG
         //        return;
