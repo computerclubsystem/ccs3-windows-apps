@@ -37,6 +37,9 @@
             lblTotalTimeValue = new Label();
             lblTotalSum = new Label();
             lblTotalSumValue = new Label();
+            lblTest = new Label();
+            btnTest = new Button();
+            cmbTest = new ComboBox();
             SuspendLayout();
             // 
             // notifyIconMain
@@ -124,11 +127,41 @@
             lblTotalSumValue.TabIndex = 7;
             lblTotalSumValue.Text = "0.00";
             // 
+            // lblTest
+            // 
+            lblTest.AutoSize = true;
+            lblTest.Location = new Point(12, 281);
+            lblTest.Name = "lblTest";
+            lblTest.Size = new Size(38, 15);
+            lblTest.TabIndex = 8;
+            lblTest.Text = "label1";
+            // 
+            // btnTest
+            // 
+            btnTest.Location = new Point(8, 320);
+            btnTest.Name = "btnTest";
+            btnTest.Size = new Size(75, 23);
+            btnTest.TabIndex = 9;
+            btnTest.Text = "button1";
+            btnTest.UseVisualStyleBackColor = true;
+            btnTest.Click += btnTest_Click;
+            // 
+            // cmbTest
+            // 
+            cmbTest.FormattingEnabled = true;
+            cmbTest.Location = new Point(127, 322);
+            cmbTest.Name = "cmbTest";
+            cmbTest.Size = new Size(121, 23);
+            cmbTest.TabIndex = 10;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(638, 259);
+            ClientSize = new Size(638, 373);
+            Controls.Add(cmbTest);
+            Controls.Add(btnTest);
+            Controls.Add(lblTest);
             Controls.Add(lblTotalSumValue);
             Controls.Add(lblTotalSum);
             Controls.Add(lblTotalTimeValue);
@@ -156,5 +189,8 @@
         private Label lblTotalTimeValue;
         private Label lblTotalSum;
         private Label lblTotalSumValue;
+        private Label lblTest;
+        private Button btnTest;
+        private ComboBox cmbTest;
     }
 }

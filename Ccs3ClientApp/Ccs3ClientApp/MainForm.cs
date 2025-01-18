@@ -403,5 +403,11 @@ namespace Ccs3ClientApp {
             public JsonSerializerOptions JsonSerializerOptions { get; set; }
             public DateTimeOffset LastServerPingSentAt { get; set; }
         }
+
+        private void btnTest_Click(object sender, EventArgs e) {
+            lblTest.Text = "ÀÑÄÔ";
+            btnTest.Text = "ßÂÅÐ";
+            cmbTest.Items.Add("ÇÖÆÁ");
+        }
     }
 }
