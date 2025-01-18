@@ -290,7 +290,7 @@ namespace Ccs3ClientApp {
             bool shouldSwitchToSecuredDesktop = !started;
 #if !DEBUG
             SwitchToDesktop(shouldSwitchToSecuredDesktop);
-#else
+#endif
             SafeChangeUI(() => {
                 var amounts = _state.StatusNotificationMessage.Body.Amounts;
                 if (amounts.RemainingSeconds.HasValue && amounts.RemainingSeconds.Value > 0) {
@@ -329,7 +329,6 @@ namespace Ccs3ClientApp {
                     lblTotalSumValue.Text = finalText;
                 }
             });
-#endif
         }
 
         private string SecondsToDurationText(long seconds) {
