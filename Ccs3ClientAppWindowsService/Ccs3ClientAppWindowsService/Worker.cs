@@ -249,7 +249,8 @@ public class Worker : BackgroundService {
         //wsConnectorConfig.TrustAllServerCertificates = true;
 #endif
         _wsConnector.Initialize(wsConnectorConfig);
-        _wsConnector.Start();
+        // TODO: Bring this back
+        //_wsConnector.Start();
     }
 
     private void _wsConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
