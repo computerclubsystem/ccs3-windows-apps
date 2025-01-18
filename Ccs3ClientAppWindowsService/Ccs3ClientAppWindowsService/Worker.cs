@@ -360,7 +360,7 @@ public class Worker : BackgroundService {
 
         // TODO: We could use environment variable
         // Get path using current path - the client app is in subfolder of current service executable path
-        var clientAppProcessExecutableFullPath = Path.GetFullPath(Path.Combine(".", "ClientApp\\Ccs3ClientApp.exe"));
+        var clientAppProcessExecutableFullPath = Path.GetFullPath(Path.Combine(".", "Ccs3ClientApp\\Ccs3ClientApp.exe"));
 
         var sessions = ClientAppProcessController.GetSessions();
         LogClientAppProcessData(() => {
