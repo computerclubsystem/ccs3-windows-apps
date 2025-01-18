@@ -57,6 +57,7 @@ public class Worker : BackgroundService {
         }
         // Give 5 seconds to stop all client processes
         var startTime = GetNow();
+        _logger.LogInformation("Killing client instances");
         while (true) {
             bool instanceStopped = KillClientAppProcess();
             if (!instanceStopped) {
