@@ -1,7 +1,11 @@
 using Ccs3ClientAppWindowsService.Messages;
+using Ccs3ClientAppWindowsService.Messages.LocalClient;
+using Ccs3ClientAppWindowsService.Messages.LocalClient.Declarations;
 using Microsoft.VisualBasic;
 using Microsoft.Win32.SafeHandles;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
@@ -17,19 +21,24 @@ public class Worker : BackgroundService {
     private readonly CertificateHelper _certificateHelper = new();
     private bool _disableClientAppProcessStartLogs = false;
     private JsonSerializerOptions _jsonSerializerOptions;
-    Message<DeviceConfigurationMessageBody> _deviceConfigMsg;
-    System.Threading.Timer _timer;
-    private WorkerState _state = new WorkerState();
+    private Message<DeviceConfigurationNotificationMessageBody> _deviceConfigMsg;
+    private Message<DeviceSetStatusNotificationMessageBody> _deviceSetStatusMsg;
+    private System.Threading.Timer _timer;
+    private readonly WorkerState _state = new WorkerState();
+    private readonly WebSocketServerManager _wsServerManager;
 
     public Worker(
-        ILogger<Worker> logger
+        ILogger<Worker> logger,
+        WebSocketServerManager wsServerManager
     ) {
         _logger = logger;
+        _wsServerManager = wsServerManager;
         _timer = new Timer(TimerCallbackFunction, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         PrepareState();
+        _state.CancellationToken = stoppingToken;
         if (_logger.IsEnabled(LogLevel.Information)) {
             _logger.LogInformation("Worker running at: {time}", GetNow());
         }
@@ -37,9 +46,114 @@ public class Worker : BackgroundService {
         _disableClientAppProcessStartLogs = Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CAWS_DEBUG_DISABLE_CLIENT_APP_PROCESS_START_LOGS) == "true";
         StartWebSocketConnector(stoppingToken);
         while (!stoppingToken.IsCancellationRequested) {
-            StartClientAppIfNotStarted();
+            try {
+                StartClientAppIfNotStarted();
+            } catch (Exception ex) {
+                _logger.LogError(ex, "Error on StartClientAppIfNotStarted");
+            }
             await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
         }
+        Environment.Exit(0);
+    }
+
+    public override Task StopAsync(CancellationToken cancellationToken) {
+        _logger.LogWarning("StopAsync");
+        return base.StopAsync(cancellationToken);
+    }
+
+    public async Task HandleConnectedWebSocket(WebSocket webSocket) {
+        ExecuteIfTraceIsEnabled(() => {
+            _logger.LogTrace("Local client WebSocket connected");
+        });
+        ClientWebSocketState wsState = new() { WebSocket = webSocket };
+        _state.WebSockets.TryAdd(webSocket, wsState);
+        SendConfigurationNotificationMessage(webSocket);
+        // 100 Kb buffer
+        var buffer = new byte[100 * 1024];
+        WebSocketReceiveResult? receiveResult = null;
+        while (!_state.CancellationToken.IsCancellationRequested && webSocket.State == WebSocketState.Open) {
+            try {
+                receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), _state.CancellationToken);
+                if (receiveResult.MessageType == WebSocketMessageType.Close || receiveResult.Count == 0) {
+                    break;
+                } else {
+                    if (receiveResult.EndOfMessage) {
+                        string stringData = Encoding.UTF8.GetString(buffer, 0, receiveResult.Count);
+                        ExecuteIfTraceIsEnabled(() => {
+                            _logger.LogTrace(new EventId(5, "Received message from local client WebSocket"), "Received message from local client: {0}", stringData);
+                        });
+                        ProcessLocalClientWebSocketMessage(wsState, stringData);
+                    } else {
+                        // TODO: Not entire message is received - collect the data and process only after the entire message is recevied
+                        ExecuteIfTraceIsEnabled(() => {
+                            _logger.LogTrace("Partial message received from local client: {0}", buffer);
+                        });
+                    }
+                }
+            } catch (Exception ex) {
+                _logger.LogError(ex, "Error on receiving from local client WebSocket");
+                break;
+            }
+        }
+        ExecuteIfTraceIsEnabled(() => {
+            _logger.LogTrace(
+                "Closing local client WebSocket. WebSocket state: {0}, CancellationRequested: {1}, Result message type: {2}, Result CloseStatus: {3}, Result CloseStatusDescription: {4}",
+                webSocket.State,
+                _state.CancellationToken.IsCancellationRequested,
+                receiveResult?.MessageType,
+                receiveResult?.CloseStatus,
+                receiveResult?.CloseStatusDescription
+            );
+        });
+        wsState.WebSocket = null;
+        _state.WebSockets.TryRemove(webSocket, out _);
+    }
+
+    private void ProcessLocalClientWebSocketMessage(ClientWebSocketState wsState, string stringData) {
+        LocalClientPartialMessage partialMsg = DeserializeLocalClientPartialMessage(stringData);
+        if (partialMsg?.Header?.Type == null) {
+            // TODO: Can't process the message
+            return;
+        }
+        // TODO: Should we set LastMessageReceivedAt only for known messages ?
+        wsState.LastMessageReceivedAt = GetNow();
+        string msgType = partialMsg.Header.Type;
+        switch (msgType) {
+            case LocalClientRequestMessageType.Ping:
+                //var msg = DeserializeLocalClientRequestMessage<LocalClientPingRequestMessage, LocalClientPingRequestMessageBody>(stringData);
+                // We don't need to process the ping message - LastMessageReceivedAt was already set
+                break;
+        }
+    }
+
+    private TMessage DeserializeLocalClientRequestMessage<TMessage, TBody>(string jsonString) where TMessage : LocalClientRequestMessage<TBody>, new() {
+        var deserialized = JsonSerializer.Deserialize<LocalClientRequestMessage<object>>(jsonString, _jsonSerializerOptions);
+        // TODO: Can we use reflection to infer the TBody ?
+        var deserializedMsg = CreateTypedLocalClientRequestMessageFromGenericMessage<TBody>(deserialized);
+        TMessage result = new TMessage();
+        result.Header = deserializedMsg.Header;
+        result.Body = deserializedMsg.Body;
+        return result;
+    }
+
+    private LocalClientRequestMessage<TBody> CreateTypedLocalClientRequestMessageFromGenericMessage<TBody>(LocalClientRequestMessage<object> msg) {
+        string bodyString = msg.Body.ToString()!;
+        TBody? body = DeserializeBody<TBody>(bodyString);
+        LocalClientRequestMessage<TBody> deserializedMsg = new LocalClientRequestMessage<TBody>();
+        deserializedMsg.Header = msg.Header;
+        deserializedMsg.Body = body!;
+        return deserializedMsg;
+    }
+
+    private LocalClientPartialMessage DeserializeLocalClientPartialMessage(string jsonString) {
+        var deserialized = JsonSerializer.Deserialize<LocalClientPartialMessage>(jsonString, _jsonSerializerOptions);
+        return deserialized;
+    }
+
+    private async void SendConfigurationNotificationMessage(WebSocket ws) {
+        LocalClientConfigurationNotificationMessage msg = LocalClientConfigurationNotificationMessageHelper.CreateMessage();
+        msg.Body.PingInterval = _state.LocalClientPingInterval;
+        await SendLocalClientNotificationMessage(msg, ws);
     }
 
     private void StartWebSocketConnector(CancellationToken cancellationToken) {
@@ -76,7 +190,7 @@ public class Worker : BackgroundService {
             ServerCertificateThumbprint = pcConnectorCertificateThumbprint,
         };
 #if DEBUG
-        wsConnectorConfig.TrustAllServerCertificates = true;
+        //wsConnectorConfig.TrustAllServerCertificates = true;
 #endif
         _wsConnector.Initialize(wsConnectorConfig);
         _wsConnector.Start();
@@ -101,10 +215,12 @@ public class Worker : BackgroundService {
     private void _wsConnector_DataReceived(object? sender, DataReceivedEventArgs e) {
         bool traceEnabled = _logger.IsEnabled(LogLevel.Trace);
         if (traceEnabled) {
-            _logger.LogTrace("WebSocket data received. Bytes length: {0}, bytes: {1}",
-                e.Data.Length,
-                BitConverter.ToString(e.Data.ToArray())
-            );
+            ExecuteIfTraceIsEnabled(() => {
+                _logger.LogTrace("WebSocket data received. Bytes length: {0}, bytes: {1}",
+                    e.Data.Length,
+                    BitConverter.ToString(e.Data.ToArray())
+                );
+            });
         }
         try {
             string stringData = Encoding.UTF8.GetString(e.Data.ToArray());
@@ -112,7 +228,7 @@ public class Worker : BackgroundService {
                 _logger.LogTrace("Received string '{0}'", stringData);
             }
             try {
-                this.ProcessReceivedMessage(stringData);
+                ProcessWebSocketConnectorReceivedData(stringData);
             } catch (Exception ex) {
                 _logger.LogError(ex, "Can't process received data '{0}'", stringData);
             }
@@ -121,21 +237,53 @@ public class Worker : BackgroundService {
         }
     }
 
-    private void ProcessReceivedMessage(string stringData) {
+    private void ProcessWebSocketConnectorReceivedData(string stringData) {
         Message<object> msg = DeserializeMessage<object>(stringData);
         string msgType = msg.Header.Type;
         switch (msgType) {
             case MessageType.DeviceConfiguration:
-                Message<DeviceConfigurationMessageBody> deviceConfigurationMsg = CreateTypedMessageFromGenericMessage<DeviceConfigurationMessageBody>(msg);
-                ProcessDeviceConfigurationMessage(deviceConfigurationMsg);
+                Message<DeviceConfigurationNotificationMessageBody> deviceConfigurationMsg = CreateTypedMessageFromGenericMessage<DeviceConfigurationNotificationMessageBody>(msg);
+                ProcessDeviceConfigurationNotificationMessage(deviceConfigurationMsg);
+                break;
+            case MessageType.DeviceSetStatus:
+                Message<DeviceSetStatusNotificationMessageBody> deviceSetStatusNotificationMsg = CreateTypedMessageFromGenericMessage<DeviceSetStatusNotificationMessageBody>(msg);
+                ProcessDeviceSetStatusNotificationMessage(deviceSetStatusNotificationMsg);
                 break;
         }
         //JsonSerializer.Deserialize<object>(deserialized.Body as JsonElement);
         //const bodyJsonElement = deserialized.Body as JsonElement;
     }
 
-    private void ProcessDeviceConfigurationMessage(Message<DeviceConfigurationMessageBody> msg) {
+    private void ProcessDeviceConfigurationNotificationMessage(Message<DeviceConfigurationNotificationMessageBody> msg) {
         _deviceConfigMsg = msg;
+    }
+
+    private void ProcessDeviceSetStatusNotificationMessage(Message<DeviceSetStatusNotificationMessageBody> msg) {
+        _deviceSetStatusMsg = msg;
+        // TODO: send to local clients the new status
+        var msgToSend = LocalClientStatusNotificationMessageHelper.CreateMessage();
+        msgToSend.Body = new LocalClientStatusNotificationMessageBody {
+            Started = msg.Body.Started,
+            Amounts = msg.Body.Amounts,
+        };
+        string serialized = SerializeLocalClientNotificationMessage(msgToSend);
+        SendToAllLocalClients(serialized);
+    }
+
+    private async void SendToAllLocalClients(string data) {
+        byte[] bytes = Encoding.UTF8.GetBytes(data);
+        ArraySegment<byte> arraySegment = new ArraySegment<byte>(bytes);
+        foreach (var kvp in _state.WebSockets.Where(x => x.Key.State == WebSocketState.Open)) {
+            var ws = kvp.Key;
+            try {
+                ExecuteIfTraceIsEnabled(() => {
+                    _logger.LogTrace(new EventId(6, "Sending data to client WebSocket"), "Sending data to client WebSocket: {0}", data);
+                });
+                await ws.SendAsync(arraySegment, WebSocketMessageType.Text, true, _state.CancellationToken);
+            } catch (Exception ex) {
+                this._logger.LogError(ex, "Can't send data {0} to local client", data);
+            }
+        }
     }
 
     private Message<TBody> CreateTypedMessageFromGenericMessage<TBody>(Message<object> msg) {
@@ -158,6 +306,11 @@ public class Worker : BackgroundService {
     }
 
     private string SerializeMessage<TBody>(Message<TBody> msg) {
+        var serializedString = JsonSerializer.Serialize(msg, _jsonSerializerOptions);
+        return serializedString;
+    }
+
+    private string SerializeLocalClientNotificationMessage<TBody>(LocalClientNotificationMessage<TBody> msg) {
         var serializedString = JsonSerializer.Serialize(msg, _jsonSerializerOptions);
         return serializedString;
     }
@@ -197,13 +350,21 @@ public class Worker : BackgroundService {
 
     private void StartClientAppIfNotStarted() {
         // TODO: For testing only
-        return;
-        // TODO: Get path using current path - the client app is in subfolder of current service executable path
+        //#if DEBUG
+        //        return;
+        //#endif
+        if (_startProcessAsCurrentUserResult != null && _startProcessAsCurrentUserResult.Success) {
+            // The proces seems started
+            return;
+        }
+
+        // TODO: We could use environment variable
+        // Get path using current path - the client app is in subfolder of current service executable path
         var clientAppProcessExecutableFullPath = Path.GetFullPath(Path.Combine(".", "ClientApp\\Ccs3ClientApp.exe"));
 
         var sessions = ClientAppProcessController.GetSessions();
         LogClientAppProcessData(() => {
-            if (_logger.IsEnabled(LogLevel.Debug)) {
+            if (_logger.IsEnabled(LogLevel.Trace)) {
                 StringBuilder sb = new();
                 foreach (var session in sessions) {
                     sb.AppendLine("Session id: " + session.SessionID);
@@ -211,42 +372,57 @@ public class Worker : BackgroundService {
                     sb.AppendLine("Session state: " + session.State);
                     sb.AppendLine("-----------------");
                 }
-                _logger.LogDebug("Sessions: {sessions}", sb.ToString());
+                _logger.LogTrace("Sessions: {sessions}", sb.ToString());
             }
         });
         ClientAppProcessController.WTS_SESSION_INFO? activeSession = sessions.FirstOrDefault(x => x.State == ClientAppProcessController.WTS_CONNECTSTATE_CLASS.WTSActive);
         if (activeSession is not null) {
+            LogClientAppProcessData(() => {
+                _logger.LogTrace("ActiveSession: {0}", activeSession.Value.SessionID);
+            });
             // TODO: Check if the app already runs
             Process? clientAppProcess = GetProcessByExecutablePath((int)activeSession.Value.SessionID, clientAppProcessExecutableFullPath);
             if (clientAppProcess == null) {
-                if (_startProcessAsCurrentUserResult?.ProcInfo != null) {
+                LogClientAppProcessData(() => {
+                    _logger.LogTrace("It seems that process with path {0} does not run in session {1}", clientAppProcessExecutableFullPath, activeSession.Value.SessionID);
+                });
+                if (_startProcessAsCurrentUserResult != null && _startProcessAsCurrentUserResult.ProcInfo.hProcess != 0) {
                     ClientAppProcessController.CloseProcInfoHandles(_startProcessAsCurrentUserResult.ProcInfo);
                 }
                 LogClientAppProcessData(() => {
-                    _logger.LogInformation("Trying to start the process: {clientAppProcessExecutableFullPath}", clientAppProcessExecutableFullPath);
+                    _logger.LogTrace("Trying to start the process: {clientAppProcessExecutableFullPath}", clientAppProcessExecutableFullPath);
                 });
-                _startProcessAsCurrentUserResult = ClientAppProcessController.StartProcessAsCurrentUser(clientAppProcessExecutableFullPath);
-                LogClientAppProcessData(() => {
-                    _logger.LogInformation("Process handle: {hProcess}", _startProcessAsCurrentUserResult.ProcInfo.hProcess);
-                });
+                _startProcessAsCurrentUserResult = ClientAppProcessController.StartProcessAsCurrentUser(clientAppProcessExecutableFullPath, null, null, true, _logger);
                 if (_startProcessAsCurrentUserResult.Success) {
                     LogClientAppProcessData(() => {
-                        _logger.LogInformation("Process {clientAppProcessExecutableFullPath} started. PID: {pid}", clientAppProcessExecutableFullPath, _startProcessAsCurrentUserResult.ProcInfo.dwProcessId);
+                        _logger.LogTrace("Process handle: {hProcess}", _startProcessAsCurrentUserResult.ProcInfo.hProcess);
+                    });
+                    LogClientAppProcessData(() => {
+                        _logger.LogTrace("Process {clientAppProcessExecutableFullPath} started. PID: {pid}", clientAppProcessExecutableFullPath, _startProcessAsCurrentUserResult.ProcInfo.dwProcessId);
                     });
                     // TODO: Should we call WaitForInputIdle to know when the process has finished initialization ?
-                    Process pc = Process.GetProcessById((int)_startProcessAsCurrentUserResult.ProcInfo.dwProcessId);
-                    // TODO: Provide cancellation token
-                    WaitForProcessToExit(_startProcessAsCurrentUserResult.ProcInfo.hProcess).ContinueWith(task => {
-                        LogClientAppProcessData(() => {
-                            _logger.LogInformation("Client app process has exited");
+                    if (_startProcessAsCurrentUserResult.ProcInfo.hProcess != 0) {
+                        // Process pc = Process.GetProcessById((int)_startProcessAsCurrentUserResult.ProcInfo?.dwProcessId);
+                        // TODO: Provide cancellation token
+                        WaitForProcessToExit(_startProcessAsCurrentUserResult.ProcInfo.hProcess).ContinueWith(task => {
+                            _startProcessAsCurrentUserResult = null;
+                            LogClientAppProcessData(() => {
+                                _logger.LogInformation("Client app process has exited");
+                            });
                         });
-                    });
-                    LogClientAppProcessData(() => {
-                        _logger.LogInformation("Waiting for the ClientApp process to exit");
-                    });
+                        LogClientAppProcessData(() => {
+                            _logger.LogInformation("Waiting for the ClientApp process to exit");
+                        });
+                    }
                 } else {
                     LogClientAppProcessData(() => {
-                        _logger.LogWarning("Can't start the process {clientAppProcessExecutableFullPath}. WinAPI errors: {lastErrors}", clientAppProcessExecutableFullPath, _startProcessAsCurrentUserResult.LastErrors);
+                        _logger.LogWarning(
+                            "Can't start the process {clientAppProcessExecutableFullPath}. WinAPI errors: {lastErrors}, dwProcessId: {dwProcessId}, hProcess: {hProcess}",
+                            clientAppProcessExecutableFullPath,
+                            _startProcessAsCurrentUserResult.LastErrors,
+                            _startProcessAsCurrentUserResult.ProcInfo.dwProcessId,
+                            _startProcessAsCurrentUserResult.ProcInfo.hProcess
+                        );
                     });
                 }
             }
@@ -295,6 +471,24 @@ public class Worker : BackgroundService {
         _wsConnector.SendData(buffer);
     }
 
+    private async Task<bool> SendLocalClientNotificationMessage<TBody>(LocalClientNotificationMessage<TBody> msg, WebSocket ws) {
+        string serialized = SerializeLocalClientNotificationMessage(msg);
+        ReadOnlyMemory<byte> bytes = new(Encoding.UTF8.GetBytes(serialized));
+        _state.LastLocalClientDataSentAt = GetNow();
+        try {
+            ExecuteIfTraceIsEnabled(() => {
+                _logger.LogTrace("Sending local client notification message: {0}", serialized);
+            });
+            await ws.SendAsync(bytes, WebSocketMessageType.Text, true, _state.CancellationToken);
+            return true;
+        } catch (Exception ex) {
+            _logger.LogError(ex, "Can't send LocalClientNotificationMessage message");
+            //SendDataError?.Invoke(this, new SendDataErrorEventArgs { Exception = ex });
+            return false;
+        }
+        //_wsConnector.SendData(buffer);
+    }
+
     public DateTimeOffset GetNow() {
         return DateTimeOffset.Now;
     }
@@ -308,6 +502,8 @@ public class Worker : BackgroundService {
 
     private void PrepareState() {
         _state.LastServicePingDateTime = GetNow();
+        _state.LocalClientPingInterval = 5000;
+        _state.WebSockets = new ConcurrentDictionary<WebSocket, ClientWebSocketState>();
     }
 
     private void LogClientAppProcessData(Action logAction) {
@@ -331,13 +527,15 @@ public class Worker : BackgroundService {
         return processByExecutablePath;
     }
 
-    // TODO: Accept CancellationToken
     private Task WaitForProcessToExit(nint processHandle) {
+        if (processHandle == 0) {
+            return Task.CompletedTask;
+        }
         var task = Task.Run(() => {
             EventWaitHandle ewh = new EventWaitHandle(false, EventResetMode.AutoReset);
             ewh.SafeWaitHandle = new SafeWaitHandle(_startProcessAsCurrentUserResult!.ProcInfo.hProcess, true);
             bool waitOneResult = ewh.WaitOne();
-        });
+        }, _state.CancellationToken);
         return task;
     }
 
@@ -358,8 +556,17 @@ public class Worker : BackgroundService {
         public static readonly string CCS3_CAWS_DEBUG_DISABLE_CLIENT_APP_PROCESS_START_LOGS = "CCS3_CAWS_DEBUG_DISABLE_CLIENT_APP_PROCESS_START_LOGS";
     }
 
+    private class ClientWebSocketState {
+        public WebSocket WebSocket { get; set; }
+        public DateTimeOffset? LastMessageReceivedAt { get; set; }
+    }
+
     private class WorkerState {
         public DateTimeOffset LastServicePingDateTime { get; set; }
         public DateTimeOffset? LastDataSentAt { get; set; }
+        public DateTimeOffset? LastLocalClientDataSentAt { get; set; }
+        public CancellationToken CancellationToken { get; set; }
+        public int LocalClientPingInterval { get; set; }
+        public ConcurrentDictionary<WebSocket, ClientWebSocketState> WebSockets { get; set; }
     }
 }

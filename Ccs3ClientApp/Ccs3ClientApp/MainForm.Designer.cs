@@ -27,47 +27,134 @@
         ///  the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
-            testButtonCreateRestrictedAccessDesktop = new Button();
-            testButtonSwitchToRestrictedAccessDesktopFor3Seconds = new Button();
+            components = new System.ComponentModel.Container();
+            notifyIconMain = new NotifyIcon(components);
+            lblRemainingTime = new Label();
+            lblRemainingTimeValue = new Label();
+            lblStartedAt = new Label();
+            lblStartedAtValue = new Label();
+            lblTotalTime = new Label();
+            lblTotalTimeValue = new Label();
+            lblTotalSum = new Label();
+            lblTotalSumValue = new Label();
             SuspendLayout();
             // 
-            // testButtonCreateRestrictedAccessDesktop
+            // notifyIconMain
             // 
-            testButtonCreateRestrictedAccessDesktop.Location = new Point(46, 38);
-            testButtonCreateRestrictedAccessDesktop.Name = "testButtonCreateRestrictedAccessDesktop";
-            testButtonCreateRestrictedAccessDesktop.Size = new Size(126, 64);
-            testButtonCreateRestrictedAccessDesktop.TabIndex = 0;
-            testButtonCreateRestrictedAccessDesktop.Text = "Create restricted access desktop";
-            testButtonCreateRestrictedAccessDesktop.UseVisualStyleBackColor = true;
-            testButtonCreateRestrictedAccessDesktop.Click += testButtonCreateRestrictedAccessDesktop_Click;
+            notifyIconMain.Text = "Ccs3 Client App";
+            notifyIconMain.Visible = true;
             // 
-            // testButtonSwitchToRestrictedAccessDesktopFor3Seconds
+            // lblRemainingTime
             // 
-            testButtonSwitchToRestrictedAccessDesktopFor3Seconds.Location = new Point(241, 38);
-            testButtonSwitchToRestrictedAccessDesktopFor3Seconds.Name = "testButtonSwitchToRestrictedAccessDesktopFor3Seconds";
-            testButtonSwitchToRestrictedAccessDesktopFor3Seconds.Size = new Size(166, 64);
-            testButtonSwitchToRestrictedAccessDesktopFor3Seconds.TabIndex = 1;
-            testButtonSwitchToRestrictedAccessDesktopFor3Seconds.Text = "Switch to restricted desktop for 3 seconds";
-            testButtonSwitchToRestrictedAccessDesktopFor3Seconds.UseVisualStyleBackColor = true;
-            testButtonSwitchToRestrictedAccessDesktopFor3Seconds.Click += testButtonSwitchToRestrictedAccessDesktopFor3Seconds_Click;
+            lblRemainingTime.AutoSize = true;
+            lblRemainingTime.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblRemainingTime.Location = new Point(12, 9);
+            lblRemainingTime.Name = "lblRemainingTime";
+            lblRemainingTime.Size = new Size(201, 32);
+            lblRemainingTime.TabIndex = 0;
+            lblRemainingTime.Text = "Оставащо време";
+            // 
+            // lblRemainingTimeValue
+            // 
+            lblRemainingTimeValue.AutoSize = true;
+            lblRemainingTimeValue.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblRemainingTimeValue.Location = new Point(265, 9);
+            lblRemainingTimeValue.Name = "lblRemainingTimeValue";
+            lblRemainingTimeValue.Size = new Size(27, 32);
+            lblRemainingTimeValue.TabIndex = 1;
+            lblRemainingTimeValue.Text = "0";
+            // 
+            // lblStartedAt
+            // 
+            lblStartedAt.AutoSize = true;
+            lblStartedAt.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblStartedAt.Location = new Point(12, 63);
+            lblStartedAt.Name = "lblStartedAt";
+            lblStartedAt.Size = new Size(162, 32);
+            lblStartedAt.TabIndex = 2;
+            lblStartedAt.Text = "Стартиран на";
+            // 
+            // lblStartedAtValue
+            // 
+            lblStartedAtValue.AutoSize = true;
+            lblStartedAtValue.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblStartedAtValue.Location = new Point(268, 63);
+            lblStartedAtValue.Name = "lblStartedAtValue";
+            lblStartedAtValue.Size = new Size(24, 32);
+            lblStartedAtValue.TabIndex = 3;
+            lblStartedAtValue.Text = "-";
+            // 
+            // lblTotalTime
+            // 
+            lblTotalTime.AutoSize = true;
+            lblTotalTime.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblTotalTime.Location = new Point(12, 124);
+            lblTotalTime.Name = "lblTotalTime";
+            lblTotalTime.Size = new Size(225, 32);
+            lblTotalTime.TabIndex = 4;
+            lblTotalTime.Text = "Използвано време";
+            // 
+            // lblTotalTimeValue
+            // 
+            lblTotalTimeValue.AutoSize = true;
+            lblTotalTimeValue.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblTotalTimeValue.Location = new Point(268, 124);
+            lblTotalTimeValue.Name = "lblTotalTimeValue";
+            lblTotalTimeValue.Size = new Size(27, 32);
+            lblTotalTimeValue.TabIndex = 5;
+            lblTotalTimeValue.Text = "0";
+            // 
+            // lblTotalSum
+            // 
+            lblTotalSum.AutoSize = true;
+            lblTotalSum.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblTotalSum.Location = new Point(12, 190);
+            lblTotalSum.Name = "lblTotalSum";
+            lblTotalSum.Size = new Size(70, 32);
+            lblTotalSum.TabIndex = 6;
+            lblTotalSum.Text = "Сума";
+            // 
+            // lblTotalSumValue
+            // 
+            lblTotalSumValue.AutoSize = true;
+            lblTotalSumValue.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblTotalSumValue.Location = new Point(268, 190);
+            lblTotalSumValue.Name = "lblTotalSumValue";
+            lblTotalSumValue.Size = new Size(58, 32);
+            lblTotalSumValue.TabIndex = 7;
+            lblTotalSumValue.Text = "0.00";
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
-            Controls.Add(testButtonSwitchToRestrictedAccessDesktopFor3Seconds);
-            Controls.Add(testButtonCreateRestrictedAccessDesktop);
+            ClientSize = new Size(441, 259);
+            Controls.Add(lblTotalSumValue);
+            Controls.Add(lblTotalSum);
+            Controls.Add(lblTotalTimeValue);
+            Controls.Add(lblTotalTime);
+            Controls.Add(lblStartedAtValue);
+            Controls.Add(lblStartedAt);
+            Controls.Add(lblRemainingTimeValue);
+            Controls.Add(lblRemainingTime);
             Name = "MainForm";
-            Text = "Form1";
+            Text = "Ccs3 Client App";
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
 
-        private Button testButtonCreateRestrictedAccessDesktop;
-        private Button testButtonSwitchToRestrictedAccessDesktopFor3Seconds;
+        private NotifyIcon notifyIconMain;
+        private Label lblRemainingTime;
+        private Label lblRemainingTimeValue;
+        private Label lblStartedAt;
+        private Label lblStartedAtValue;
+        private Label lblTotalTime;
+        private Label lblTotalTimeValue;
+        private Label lblTotalSum;
+        private Label lblTotalSumValue;
     }
 }

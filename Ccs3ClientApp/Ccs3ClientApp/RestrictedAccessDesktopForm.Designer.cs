@@ -23,10 +23,25 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "RestrictedAccessDesktopForm";
+            SuspendLayout();
+            // 
+            // RestrictedAccessDesktopForm
+            // 
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.Black;
+            ClientSize = new Size(800, 450);
+            ControlBox = false;
+            FormBorderStyle = FormBorderStyle.None;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            Name = "RestrictedAccessDesktopForm";
+            ShowIcon = false;
+            ShowInTaskbar = false;
+            Text = "Ccs3 Client App - idle info";
+            WindowState = FormWindowState.Maximized;
+            FormClosing += RestrictedAccessDesktopForm_FormClosing;
+            ResumeLayout(false);
         }
 
         #endregion
