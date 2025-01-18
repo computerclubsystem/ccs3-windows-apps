@@ -44,8 +44,7 @@ public class Worker : BackgroundService {
         }
         _jsonSerializerOptions = CreateJsonSerializerOptions();
         _disableClientAppProcessStartLogs = Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CAWS_DEBUG_DISABLE_CLIENT_APP_PROCESS_START_LOGS) == "true";
-        // TODO: Bring this back
-        //StartWebSocketConnector(stoppingToken);
+        StartWebSocketConnector(stoppingToken);
         while (!stoppingToken.IsCancellationRequested) {
             try {
                 StartClientAppIfNotStarted();
@@ -115,6 +114,7 @@ public class Worker : BackgroundService {
     }
 
     public async Task HandleConnectedWebSocket(WebSocket webSocket) {
+        return;
         ExecuteIfTraceIsEnabled(() => {
             _logger.LogTrace("Local client WebSocket connected");
         });
