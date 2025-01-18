@@ -197,7 +197,7 @@ public class Worker : BackgroundService {
     }
 
     private void _wsConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
-        _logger.LogWarning("Disconnected from the server");
+        _logger.LogInformation("Disconnected from the server");
     }
 
     private void _wsConnector_ReceiveError(object? sender, ReceiveErrorEventArgs e) {
@@ -349,7 +349,11 @@ public class Worker : BackgroundService {
     }
 
     private void StartClientAppIfNotStarted() {
-        return;
+        if (_deviceConfigMsg == null) {
+            // Still did not received initial messages from server - probably this device 
+            // is not part of the system / not active / no connection to the server
+            return;
+        }
         // TODO: For testing only
         //#if DEBUG
         //        return;
