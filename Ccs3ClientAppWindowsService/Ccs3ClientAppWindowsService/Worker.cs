@@ -114,9 +114,8 @@ public class Worker : BackgroundService {
     }
 
     public async Task HandleConnectedWebSocket(WebSocket webSocket) {
-        return;
         ExecuteIfDebugIsEnabled(() => {
-            _logger.LogDebug("Local client WebSocket connected");
+            _logger.LogDebug(new EventId(100), "Local client WebSocket connected");
         });
         if (_state.CancellationToken.IsCancellationRequested) {
             return;
