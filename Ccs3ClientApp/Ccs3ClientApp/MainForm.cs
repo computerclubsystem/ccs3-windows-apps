@@ -6,6 +6,7 @@ using Microsoft.VisualBasic;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -73,6 +74,7 @@ namespace Ccs3ClientApp {
             notifyIconMain.Icon = this.Icon;
             notifyIconMain.ShowBalloonTip(3000, "Ccs3 Client App", "От тук може да видите информация за текущата сесия", ToolTipIcon.Info);
             lblRemainingTimeValue.Text = "";
+            Text = "Ccs3 Client App " + typeof(MainForm).Assembly.GetName().Version.ToString();
             Initialize();
         }
 

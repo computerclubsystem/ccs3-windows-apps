@@ -13,6 +13,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
 	<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
 	<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
+	<AssemblyVersion>3.0.0.1</AssemblyVersion>
   </PropertyGroup>
 
 </Project>
