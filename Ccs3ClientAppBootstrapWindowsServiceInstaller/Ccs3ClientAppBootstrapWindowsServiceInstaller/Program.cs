@@ -31,7 +31,7 @@ internal class Program {
         ExecutionResult stopClientAppServicesResult = StopClientAppServices();
         exResults.Add(new ExecutionResultWithName { Name = "StopClientAppServices", ExecutionResult = stopClientAppServicesResult });
 
-        string targetFolder = GetTargetFolder();
+        string targetFolder = GetTargetFolder(cmdParams.InstallFolder);
         CreateTargetFolder(targetFolder);
 
         ExtractContent(cmdParams.ContentFilePath, targetFolder);
@@ -102,7 +102,10 @@ internal class Program {
         }
     }
 
-    private static string GetTargetFolder() {
+    private static string GetTargetFolder(string? preferredFolder) {
+        if (!string.IsNullOrWhiteSpace(preferredFolder)) {
+            return preferredFolder;
+        }
         string programFilesPath = Environment.ExpandEnvironmentVariables("%ProgramFiles%");
         string bootstrapWindowsServicePath = Path.Combine(programFilesPath, "CCS3\\BootstrapWindowsService");
         return bootstrapWindowsServicePath;
@@ -265,6 +268,10 @@ internal class Program {
                     cmdParams.PcConnectorServiceCertificateThumbprint = args[i + 1];
                     i++;
                     break;
+                case "--install-folder":
+                    cmdParams.InstallFolder = args[i + 1];
+                    i++;
+                    break;
                 default:
                     unknownParams.Add(args[i]);
                     break;
@@ -320,6 +327,7 @@ internal class Program {
         public string? ClientAppWindowsServiceLocalBaseUrl { get; set; }
         public string? CertificateAuthorityIssuerCertificateThumbprint { get; set; }
         public string? PcConnectorServiceCertificateThumbprint { get; set; }
+        public string? InstallFolder { get; set; }
         public string[] UnknownParameters { get; set; }
     }
 

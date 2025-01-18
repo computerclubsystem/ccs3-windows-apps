@@ -4,40 +4,58 @@ using Microsoft.Extensions.Logging.Configuration;
 using Microsoft.Extensions.Logging.EventLog;
 using System.Net;
 using System.Net.WebSockets;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace Ccs3ClientAppWindowsService;
+
+enum ProcessExitCode {
+    LocalServiceCertificateNotFound = 1
+}
 
 public class Program {
     private static ILogger _logger;
     private static readonly string _serviceName = "Ccs3ClientAppWindowsService";
     private static readonly CertificateHelper _certificateHelper = new();
-    private static readonly List<WebSocket> _webSockets = new();
+    private static X509Certificate2? _localCert;
+    private static WebApplicationBuilder _builder;
+    private static WebApplication _app;
 
-    public static void Main(string[] args) {
+    public static int Main(string[] args) {
         var builder = CreateAppBuilder(args);
+        _builder = builder;
         LoggerProviderOptions.RegisterProviderOptions<EventLogSettings, EventLogLoggerProvider>(builder.Services);
         var (loggerFactory, logger) = CreateLogger();
         _logger = logger;
+        _localCert = GetLocalServiceCertificate();
+        if (_localCert == null) {
+            var exitCode = (int)ProcessExitCode.LocalServiceCertificateNotFound;
+            Environment.ExitCode = exitCode;
+            return exitCode;
+        }
+        _certificateHelper.SetLocalServiceCertificate(_localCert);
         var app = builder.Build();
+        _app = app;
         Directory.SetCurrentDirectory(builder.Environment.ContentRootPath);
         app.UseDefaultFiles();
         app.UseStaticFiles();
-        //var webSocketOptions = new WebSocketOptions {
-        //    KeepAliveInterval = TimeSpan.FromMinutes(2),
-        //};
+        var webSocketOptions = new WebSocketOptions {
+            KeepAliveInterval = TimeSpan.FromMinutes(2),
+        };
         app.UseWebSockets();
         app.Use(async (context, next) => {
             if (context.WebSockets.IsWebSocketRequest) {
                 try {
-
+                    // TODO: Get query parameter and check if it is valid
                     WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                    _webSockets.Add(webSocket);
-                    var socketFinishedTcs = new TaskCompletionSource<object>();
+                    Worker worker = (Worker)app.Services.GetServices<IHostedService>().First(x => x.GetType() == typeof(Worker));
+                    await worker.HandleConnectedWebSocket(webSocket);
+                    //_webSockets.Add(webSocket);
+                    //var socketFinishedTcs = new TaskCompletionSource<object>();
 
-                    //BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
+                    ////BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
 
-                    await socketFinishedTcs.Task;
+                    //await socketFinishedTcs.Task;
                 } catch (Exception ex) {
                     // TODO: Cannot accept websocket
                 }
@@ -61,13 +79,45 @@ public class Program {
 
         });
         app.Run();
+        return 0;
+    }
+
+    private async void ProcessHttpRequest(HttpContext context, RequestDelegate next) {
+        if (context.WebSockets.IsWebSocketRequest) {
+            try {
+                // bool isDecrypted = rsa.TryDecrypt()
+                WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                Worker worker = (Worker)_app.Services.GetServices<IHostedService>().First(x => x.GetType() == typeof(Worker));
+
+                await worker.HandleConnectedWebSocket(webSocket);
+                //_webSockets.Add(webSocket);
+                //var socketFinishedTcs = new TaskCompletionSource<object>();
+
+                ////BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
+
+                //await socketFinishedTcs.Task;
+            } catch (Exception ex) {
+                // TODO: Cannot accept websocket
+            }
+            //await Echo(webSocket);
+        } else {
+            //context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await next(context);
+        }
     }
 
     private static WebApplicationBuilder CreateAppBuilder(string[] args) {
+        string? localWebAppFilesEnvVarValue = GetLocalWebAppFilesPathEnvironmentVariableValue();
+        string localWebAppFiles;
+        if (string.IsNullOrWhiteSpace(localWebAppFilesEnvVarValue)) {
+            localWebAppFiles = "local-web-app-files";
+        } else {
+            localWebAppFiles = localWebAppFilesEnvVarValue;
+        }
         WebApplicationOptions webApplicationOptions = new() {
             Args = args,
             ContentRootPath = AppContext.BaseDirectory,
-            WebRootPath = Path.Combine(AppContext.BaseDirectory, "static-web-files"),
+            WebRootPath = Path.Combine(AppContext.BaseDirectory, localWebAppFiles),
         };
         //var builder = Host.CreateApplicationBuilder(settings);
         var builder = WebApplication.CreateBuilder(webApplicationOptions);
@@ -75,9 +125,18 @@ public class Program {
             options.ServiceName = _serviceName;
         });
         builder.Services.AddSingleton<CertificateHelper>(_certificateHelper);
+        builder.Services.AddSingleton<WebSocketServerManager>();
         ConfigureKestrel(builder);
         builder.Services.AddHostedService<Worker>();
         return builder;
+    }
+
+    private static bool IsClientConnectTokenValid(string? token) {
+        if (string.IsNullOrWhiteSpace(token)) {
+            return false;
+        }
+        // TODO: Try to decrypt the string and verify the time in it is not older than 
+        return true;
     }
 
     private static void ConfigureKestrel(WebApplicationBuilder builder) {
@@ -104,7 +163,7 @@ public class Program {
             serverOptions.Listen(preferredIPAddress, listenUri.Port, listenOptions => {
                 listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3;
                 listenOptions.UseHttps(httpsConfig => {
-                    httpsConfig.ServerCertificate = GetLocalServiceCertificate();
+                    httpsConfig.ServerCertificate = _localCert;
                     // httpsConfig.SslProtocols = System.Security.Authentication.SslProtocols.Tls13;
                 });
             });
@@ -141,7 +200,7 @@ public class Program {
             _logger.LogCritical("The value '{0}' of the environment variable '{1}' is missing or invalid URL", envVarValue, Ccs3EnvironmentVariableNames.CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL);
             return null;
         }
-        string? caCertThumbprint = Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT);
+        string? caCertThumbprint = GetCaCertThumbprintEnvironmentVariableValue();
         if (caCertThumbprint is null) {
             _logger.LogCritical("The value of the environment variable '{0}' is missing. It must contain the value of the CA certificate thumbprint", Ccs3EnvironmentVariableNames.CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT);
             return null;
@@ -196,7 +255,15 @@ public class Program {
     /// <returns>Client certificate for authenticating against servers or null if not found</returns>
 
     private static string? GetLocalBaseUrlEnvironmentVariableValue() {
-        return Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL);
+        return Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL, EnvironmentVariableTarget.Machine);
+    }
+
+    private static string? GetCaCertThumbprintEnvironmentVariableValue() {
+        return Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT, EnvironmentVariableTarget.Machine);
+    }
+
+    private static string? GetLocalWebAppFilesPathEnvironmentVariableValue() {
+        return Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_WEB_APP_FILES_PATH, EnvironmentVariableTarget.Machine);
     }
 
     private static (ILoggerFactory, ILogger) CreateLogger() {
@@ -216,6 +283,7 @@ public class Program {
 
     private static class Ccs3EnvironmentVariableNames {
         public static readonly string CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL = "CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_BASE_URL";
+        public static readonly string CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_WEB_APP_FILES_PATH = "CCS3_CLIENT_APP_WINDOWS_SERVICE_LOCAL_WEB_APP_FILES_PATH";
         public static readonly string CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT = "CCS3_CERTIFICATE_AUTHORITY_ISSUER_CERTIFICATE_THUMBPRINT";
     }
 }

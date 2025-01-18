@@ -4,6 +4,7 @@ using System.Net.Security;
 using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using static System.Windows.Forms.AxHost;
 
 namespace Ccs3ClientApp;
 
@@ -120,6 +121,9 @@ public class WebSocketConnector {
     }
 
     public async Task<bool> SendData(ReadOnlyMemory<byte> bytes) {
+        if (_state.WebSocket.State != WebSocketState.Open) {
+            return false;
+        }
         try {
             await _state.WebSocket.SendAsync(bytes, WebSocketMessageType.Text, true, _config.CancellationToken);
             return true;

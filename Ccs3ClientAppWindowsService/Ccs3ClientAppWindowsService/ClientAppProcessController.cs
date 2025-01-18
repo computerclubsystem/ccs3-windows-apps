@@ -230,11 +230,12 @@ public static class ClientAppProcessController {
         return bResult;
     }
 
-    public static StartProcessAsCurrentUserResult StartProcessAsCurrentUser(string appPath, string? cmdLine = null, string? workDir = null, bool visible = true) {
+    public static StartProcessAsCurrentUserResult StartProcessAsCurrentUser(string appPath, string? cmdLine = null, string? workDir = null, bool visible = true, ILogger? logger = null) {
         StartProcessAsCurrentUserResult result = new();
         var hUserToken = IntPtr.Zero;
         var startInfo = new STARTUPINFO();
         var procInfo = new PROCESS_INFORMATION();
+        result.ProcInfo = procInfo;
         var pEnv = IntPtr.Zero;
 
         startInfo.cb = Marshal.SizeOf(typeof(STARTUPINFO));
@@ -243,6 +244,7 @@ public static class ClientAppProcessController {
             if (!GetSessionUserToken(ref hUserToken)) {
                 result.Success = false;
                 result.LastErrors = GetLastErrors();
+                logger?.LogError("GetSessionUserToken failed");
                 return result;
             }
 
@@ -254,6 +256,7 @@ public static class ClientAppProcessController {
             if (!CreateEnvironmentBlock(ref pEnv, hUserToken, false)) {
                 result.Success = false;
                 result.LastErrors = GetLastErrors();
+                logger?.LogError("CreateEnvironmentBlock failed");
                 return result;
             }
 
@@ -275,6 +278,7 @@ public static class ClientAppProcessController {
             ) {
                 result.Success = false;
                 result.LastErrors = GetLastErrors();
+                logger?.LogError("CreateProcessAsUser failed");
                 return result;
             }
             result.LastErrors = GetLastErrors();
@@ -287,8 +291,10 @@ public static class ClientAppProcessController {
             //CloseHandle(procInfo.hProcess);
         }
 
-        result.Success = result.ProcInfo.hProcess != IntPtr.Zero;
+
         result.ProcInfo = procInfo;
+        result.Success = result.ProcInfo.hProcess != 0;
+        logger?.LogTrace("StartProcessAsCurrentUserResult - hProcess: {0}, hProcess != 0: {1}", result.ProcInfo.hProcess, result.ProcInfo.hProcess != 0);
         return result;
     }
 

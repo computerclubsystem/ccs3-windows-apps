@@ -17,4 +17,8 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Messages\Device\" />
+  </ItemGroup>
 </Project>
