@@ -44,7 +44,8 @@ public class Worker : BackgroundService {
         }
         _jsonSerializerOptions = CreateJsonSerializerOptions();
         _disableClientAppProcessStartLogs = Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CAWS_DEBUG_DISABLE_CLIENT_APP_PROCESS_START_LOGS) == "true";
-        StartWebSocketConnector(stoppingToken);
+        // TODO: Bring this back
+        //StartWebSocketConnector(stoppingToken);
         while (!stoppingToken.IsCancellationRequested) {
             try {
                 //StartClientAppIfNotStarted();
@@ -70,11 +71,9 @@ public class Worker : BackgroundService {
                 // 5 seconds passed - stop retries
                 break;
             }
-            // If the timeout has not passed and an instance was killed, try again
+            // If the timeout has not passed and an instance was killed, will try again
             // to kill other instances if any
         }
-
-        Environment.Exit(0);
     }
 
     public override Task StopAsync(CancellationToken cancellationToken) {
@@ -249,8 +248,7 @@ public class Worker : BackgroundService {
         //wsConnectorConfig.TrustAllServerCertificates = true;
 #endif
         _wsConnector.Initialize(wsConnectorConfig);
-        // TODO: Bring this back
-        //_wsConnector.Start();
+        _wsConnector.Start();
     }
 
     private void _wsConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
