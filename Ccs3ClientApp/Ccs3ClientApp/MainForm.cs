@@ -406,16 +406,5 @@ namespace Ccs3ClientApp {
             public JsonSerializerOptions JsonSerializerOptions { get; set; }
             public DateTimeOffset LastServerPingSentAt { get; set; }
         }
-
-        private void button1_Click(object sender, EventArgs e) {
-            lblRemainingTimeValue.Text = "5÷.";
-        }
-
-        private void button2_Click(object sender, EventArgs e) {
-            MessageBox.Show("CurrentCulture=" + Thread.CurrentThread.CurrentCulture.ToString() + " CurrentUICulture=" + Thread.CurrentThread.CurrentUICulture.ToString());
-            var ci = CultureInfo.GetCultureInfo("bg-BG");
-            Thread.CurrentThread.CurrentCulture = ci;
-            Thread.CurrentThread.CurrentUICulture = ci;
-        }
     }
 }

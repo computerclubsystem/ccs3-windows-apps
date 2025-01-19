@@ -37,8 +37,6 @@
             lblTotalTimeValue = new Label();
             lblTotalSum = new Label();
             lblTotalSumValue = new Label();
-            button1 = new Button();
-            button2 = new Button();
             SuspendLayout();
             // 
             // notifyIconMain
@@ -62,9 +60,9 @@
             lblRemainingTimeValue.Font = new Font("Arial", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
             lblRemainingTimeValue.Location = new Point(265, 9);
             lblRemainingTimeValue.Name = "lblRemainingTimeValue";
-            lblRemainingTimeValue.Size = new Size(51, 27);
+            lblRemainingTimeValue.Size = new Size(25, 27);
             lblRemainingTimeValue.TabIndex = 1;
-            lblRemainingTimeValue.Text = "000";
+            lblRemainingTimeValue.Text = "0";
             // 
             // lblStartedAt
             // 
@@ -126,33 +124,11 @@
             lblTotalSumValue.TabIndex = 7;
             lblTotalSumValue.Text = "0.00";
             // 
-            // button1
-            // 
-            button1.Location = new Point(33, 270);
-            button1.Name = "button1";
-            button1.Size = new Size(112, 23);
-            button1.TabIndex = 8;
-            button1.Text = "Sync UI change";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
-            // 
-            // button2
-            // 
-            button2.Location = new Point(33, 299);
-            button2.Name = "button2";
-            button2.Size = new Size(112, 25);
-            button2.TabIndex = 9;
-            button2.Text = "Set thread locale";
-            button2.UseVisualStyleBackColor = true;
-            button2.Click += button2_Click;
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(638, 373);
-            Controls.Add(button2);
-            Controls.Add(button1);
             Controls.Add(lblTotalSumValue);
             Controls.Add(lblTotalSum);
             Controls.Add(lblTotalTimeValue);
@@ -180,7 +156,5 @@
         private Label lblTotalTimeValue;
         private Label lblTotalSum;
         private Label lblTotalSumValue;
-        private Button button1;
-        private Button button2;
     }
 }
