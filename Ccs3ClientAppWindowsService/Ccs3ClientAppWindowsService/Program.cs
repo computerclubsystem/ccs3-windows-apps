@@ -36,6 +36,8 @@ public class Program {
         _certificateHelper.SetLocalServiceCertificate(_localCert);
         var app = builder.Build();
         _app = app;
+        Worker worker = (Worker)app.Services.GetServices<IHostedService>().First(x => x.GetType() == typeof(Worker));
+        worker.SetAppStoppingCancellationToken(app.Lifetime.ApplicationStopping);
         Directory.SetCurrentDirectory(builder.Environment.ContentRootPath);
         app.UseDefaultFiles();
         app.UseStaticFiles();

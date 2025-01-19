@@ -36,14 +36,22 @@ public class Worker : BackgroundService {
         _timer = new Timer(TimerCallbackFunction, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
     }
 
+    public void SetAppStoppingCancellationToken(CancellationToken token) {
+        _state.AppCancellationToken = token;
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         PrepareState();
-        _state.CancellationToken = stoppingToken;
+        //_state.CancellationToken = stoppingToken;
+        _state.CancellationToken = _state.AppCancellationToken;
         _state.CancellationToken.Register(() => {
-            _logger.LogDebug(new EventId(100), "CancellationToken canceled");
+            _logger.LogDebug(new EventId(101), "CancellationToken canceled");
+        });
+        _state.AppCancellationToken.Register(() => {
+            _logger.LogDebug(new EventId(101), "AppCancellationToken canceled");
         });
         stoppingToken.Register(() => {
-            _logger.LogDebug(new EventId(100), "stoppingToken canceled");
+            _logger.LogDebug(new EventId(101), "stoppingToken canceled");
         });
         if (_logger.IsEnabled(LogLevel.Information)) {
             _logger.LogInformation("Worker running at: {time}", GetNow());
@@ -125,7 +133,6 @@ public class Worker : BackgroundService {
         //       _state.CancellationToken.IsCancellationRequested becomes true after the Kestrel detects stop timeout and shuts down the host
         //       This is too late for the app and it crashes
         // TODO: Remove this return; when a solution for timeouts on stop cause app crash
-        return;
         ExecuteIfDebugIsEnabled(() => {
             _logger.LogDebug(new EventId(100), "Local client WebSocket connected");
         });
@@ -434,19 +441,16 @@ public class Worker : BackgroundService {
     }
 
     private void StartClientAppIfNotStarted() {
-        // TODO: Bring this back when a solution for timeouts on stop cause app crash
-        return;
         // TODO: What if the process already runs ? Should we store its id and use it later when we want to kill it ?
         //       And what about multiple instances of the process ?
         if (_state.CancellationToken.IsCancellationRequested) {
             return;
         }
-        // TODO: Bring this back
-        //if (_deviceConfigMsg == null) {
-        //    // Still did not received initial messages from server - probably this device 
-        //    // is not part of the system / not active / no connection to the server
-        //    return;
-        //}
+        if (_deviceConfigMsg == null) {
+            // Still did not received initial messages from server - probably this device 
+            // is not part of the system / not active / no connection to the server
+            return;
+        }
         // TODO: For testing only
         //#if DEBUG
         //        return;
@@ -689,6 +693,7 @@ public class Worker : BackgroundService {
         public DateTimeOffset? LastDataSentAt { get; set; }
         public DateTimeOffset? LastLocalClientDataSentAt { get; set; }
         public CancellationToken CancellationToken { get; set; }
+        public CancellationToken AppCancellationToken { get; set; }
         public int LocalClientPingInterval { get; set; }
         public ConcurrentDictionary<WebSocket, ClientWebSocketState> WebSockets { get; set; }
     }
