@@ -39,6 +39,12 @@ public class Worker : BackgroundService {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         PrepareState();
         _state.CancellationToken = stoppingToken;
+        _state.CancellationToken.Register(() => {
+            _logger.LogDebug(new EventId(100), "CancellationToken canceled");
+        });
+        stoppingToken.Register(() => {
+            _logger.LogDebug(new EventId(100), "stoppingToken canceled");
+        });
         if (_logger.IsEnabled(LogLevel.Information)) {
             _logger.LogInformation("Worker running at: {time}", GetNow());
         }
@@ -55,6 +61,7 @@ public class Worker : BackgroundService {
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
         }
+        _logger.LogInformation(new EventId(500), "Cancellation requested");
         // Give 5 seconds to stop all client processes
         var startTime = GetNow();
         _logger.LogInformation(new EventId(7, "Killing client instances"), "Killing client instances");
@@ -129,11 +136,11 @@ public class Worker : BackgroundService {
         while (!_state.CancellationToken.IsCancellationRequested && webSocket.State == WebSocketState.Open) {
             try {
                 ExecuteIfDebugIsEnabled(() => {
-                    _logger.LogDebug(new EventId(100), "Waiting to receive data on local client WebSocket connection");
+                    _logger.LogDebug(new EventId(100), "Waiting to receive data on local client WebSocket connection. IsCancellationRequested: {0}", _state.CancellationToken.IsCancellationRequested);
                 });
                 receiveResult = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), _state.CancellationToken);
                 ExecuteIfDebugIsEnabled(() => {
-                    _logger.LogDebug(new EventId(100), "Data received");
+                    _logger.LogDebug(new EventId(100), "Data received IsCancellationRequested: {0}", _state.CancellationToken.IsCancellationRequested);
                 });
                 if (receiveResult.MessageType == WebSocketMessageType.Close || receiveResult.Count == 0) {
                     ExecuteIfDebugIsEnabled(() => {
@@ -155,7 +162,7 @@ public class Worker : BackgroundService {
                     }
                 }
             } catch (Exception ex) {
-                _logger.LogError(new EventId(100), ex, "Error on receiving from local client WebSocket");
+                _logger.LogError(new EventId(100), ex, "Error on receiving from local client WebSocket. IsCancellationRequested: {0}", _state.CancellationToken.IsCancellationRequested);
                 break;
             }
         }

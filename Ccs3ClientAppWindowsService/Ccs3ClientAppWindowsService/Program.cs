@@ -82,29 +82,29 @@ public class Program {
         return 0;
     }
 
-    private async void ProcessHttpRequest(HttpContext context, RequestDelegate next) {
-        if (context.WebSockets.IsWebSocketRequest) {
-            try {
-                // bool isDecrypted = rsa.TryDecrypt()
-                WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                Worker worker = (Worker)_app.Services.GetServices<IHostedService>().First(x => x.GetType() == typeof(Worker));
+    //private async void ProcessHttpRequest(HttpContext context, RequestDelegate next) {
+    //    if (context.WebSockets.IsWebSocketRequest) {
+    //        try {
+    //            // bool isDecrypted = rsa.TryDecrypt()
+    //            WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+    //            Worker worker = (Worker)_app.Services.GetServices<IHostedService>().First(x => x.GetType() == typeof(Worker));
 
-                await worker.HandleConnectedWebSocket(webSocket);
-                //_webSockets.Add(webSocket);
-                //var socketFinishedTcs = new TaskCompletionSource<object>();
+    //            await worker.HandleConnectedWebSocket(webSocket);
+    //            //_webSockets.Add(webSocket);
+    //            //var socketFinishedTcs = new TaskCompletionSource<object>();
 
-                ////BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
+    //            ////BackgroundSocketProcessor.AddSocket(webSocket, socketFinishedTcs);
 
-                //await socketFinishedTcs.Task;
-            } catch (Exception ex) {
-                // TODO: Cannot accept websocket
-            }
-            //await Echo(webSocket);
-        } else {
-            //context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await next(context);
-        }
-    }
+    //            //await socketFinishedTcs.Task;
+    //        } catch (Exception ex) {
+    //            // TODO: Cannot accept websocket
+    //        }
+    //        //await Echo(webSocket);
+    //    } else {
+    //        //context.Response.StatusCode = StatusCodes.Status400BadRequest;
+    //        await next(context);
+    //    }
+    //}
 
     private static WebApplicationBuilder CreateAppBuilder(string[] args) {
         string? localWebAppFilesEnvVarValue = GetLocalWebAppFilesPathEnvironmentVariableValue();
