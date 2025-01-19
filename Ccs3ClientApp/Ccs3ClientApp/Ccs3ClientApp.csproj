@@ -4,6 +4,7 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
 	<PublishDir>bin\Release\net9.0-windows\publish\win-x64\</PublishDir>
+	<DeleteExistingFiles>true</DeleteExistingFiles>
 	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Nullable>enable</Nullable>
 	<SelfContained>true</SelfContained>
