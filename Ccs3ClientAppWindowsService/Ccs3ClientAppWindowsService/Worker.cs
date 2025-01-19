@@ -121,6 +121,11 @@ public class Worker : BackgroundService {
     }
 
     public async Task HandleConnectedWebSocket(WebSocket webSocket) {
+        // TODO: This does not receive _state.CancellationToken.IsCancellationRequested set to true soon enought to be able to stop listening
+        //       _state.CancellationToken.IsCancellationRequested becomes true after the Kestrel detects stop timeout and shuts down the host
+        //       This is too late for the app and it crashes
+        // TODO: Remove this return; when a solution for timeouts on stop cause app crash
+        return;
         ExecuteIfDebugIsEnabled(() => {
             _logger.LogDebug(new EventId(100), "Local client WebSocket connected");
         });
@@ -429,6 +434,8 @@ public class Worker : BackgroundService {
     }
 
     private void StartClientAppIfNotStarted() {
+        // TODO: Bring this back when a solution for timeouts on stop cause app crash
+        return;
         // TODO: What if the process already runs ? Should we store its id and use it later when we want to kill it ?
         //       And what about multiple instances of the process ?
         if (_state.CancellationToken.IsCancellationRequested) {
