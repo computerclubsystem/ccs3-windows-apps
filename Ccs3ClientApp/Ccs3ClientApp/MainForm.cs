@@ -24,6 +24,9 @@ namespace Ccs3ClientApp {
             _timer.Interval = 1000;
             _timer.Tick += _timer_Tick;
             _timer.Start();
+            var ci = CultureInfo.GetCultureInfo("bg-BG");
+            Thread.CurrentThread.CurrentCulture = ci;
+            Thread.CurrentThread.CurrentUICulture = ci;
         }
 
         // TODO: If we want to remove the close button
