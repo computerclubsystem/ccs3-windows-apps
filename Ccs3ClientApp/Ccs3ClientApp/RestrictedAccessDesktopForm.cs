@@ -25,5 +25,10 @@ namespace Ccs3ClientApp {
                 e.Cancel = true;
             }
         }
+
+        private void RestrictedAccessDesktopForm_Load(object sender, EventArgs e) {
+            lblVersion.Text = "Ccs3 Client App " + typeof(MainForm).Assembly.GetName().Version.ToString();
+
+        }
     }
 }

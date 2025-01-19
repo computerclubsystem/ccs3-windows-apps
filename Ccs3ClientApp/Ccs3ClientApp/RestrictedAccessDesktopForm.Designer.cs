@@ -23,7 +23,19 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            lblVersion = new Label();
             SuspendLayout();
+            // 
+            // lblVersion
+            // 
+            lblVersion.AutoSize = true;
+            lblVersion.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblVersion.ForeColor = SystemColors.ButtonFace;
+            lblVersion.Location = new Point(12, 9);
+            lblVersion.Name = "lblVersion";
+            lblVersion.Size = new Size(50, 18);
+            lblVersion.TabIndex = 0;
+            lblVersion.Text = "label1";
             // 
             // RestrictedAccessDesktopForm
             // 
@@ -32,6 +44,7 @@
             BackColor = Color.Black;
             ClientSize = new Size(800, 450);
             ControlBox = false;
+            Controls.Add(lblVersion);
             FormBorderStyle = FormBorderStyle.None;
             MaximizeBox = false;
             MinimizeBox = false;
@@ -41,9 +54,13 @@
             Text = "Ccs3 Client App - idle info";
             WindowState = FormWindowState.Maximized;
             FormClosing += RestrictedAccessDesktopForm_FormClosing;
+            Load += RestrictedAccessDesktopForm_Load;
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
+
+        private Label lblVersion;
     }
 }
