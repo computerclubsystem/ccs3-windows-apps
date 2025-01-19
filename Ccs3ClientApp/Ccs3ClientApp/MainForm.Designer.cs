@@ -62,9 +62,9 @@
             lblRemainingTimeValue.Font = new Font("Arial", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
             lblRemainingTimeValue.Location = new Point(265, 9);
             lblRemainingTimeValue.Name = "lblRemainingTimeValue";
-            lblRemainingTimeValue.Size = new Size(25, 27);
+            lblRemainingTimeValue.Size = new Size(51, 27);
             lblRemainingTimeValue.TabIndex = 1;
-            lblRemainingTimeValue.Text = "0";
+            lblRemainingTimeValue.Text = "000";
             // 
             // lblStartedAt
             // 

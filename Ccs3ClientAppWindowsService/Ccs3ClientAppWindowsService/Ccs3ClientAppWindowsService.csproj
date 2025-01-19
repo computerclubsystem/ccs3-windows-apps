@@ -11,7 +11,7 @@
     <PublishReadyToRun>false</PublishReadyToRun>
 	<WebPublishMethod>FileSystem</WebPublishMethod>
     <ImplicitUsings>enable</ImplicitUsings>
-	<AssemblyVersion>3.0.0.12</AssemblyVersion>
+	<AssemblyVersion>3.0.0.13</AssemblyVersion>
 	<RepositoryUrl>https://github.com/computerclubsystem/ccs3-windows-apps</RepositoryUrl>
   </PropertyGroup>
 
