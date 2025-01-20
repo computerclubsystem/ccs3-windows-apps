@@ -338,9 +338,9 @@ namespace Ccs3ClientApp {
 
         private string SecondsToDurationText(long seconds) {
             var ts = TimeSpan.FromSeconds(seconds);
-            var hoursText = ts.Hours > 0 ? $"{ts.Hours}÷." : "";
-            var minutesText = ts.Minutes > 0 ? $"{ts.Minutes}ì." : "";
-            var secondsText = ts.Seconds > 0 ? $"{ts.Seconds}ñ." : "";
+            var hoursText = ts.Hours > 0 ? $"{ts.Hours}h." : "";
+            var minutesText = ts.Minutes > 0 ? $"{ts.Minutes}m." : "";
+            var secondsText = ts.Seconds > 0 ? $"{ts.Seconds}s." : "";
             string[] parts = new string[] { hoursText, minutesText, secondsText };
             parts = parts.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
             string finalText = string.Join(" ", parts);
