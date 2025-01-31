@@ -31,6 +31,7 @@
             txtCustomerCardPassword = new TextBox();
             lblCustomerCardPassword = new Label();
             txtCustomerCardID = new TextBox();
+            chkToggleCustomerCardSignIn = new CheckBox();
             gbCustomerSignIn.SuspendLayout();
             SuspendLayout();
             // 
@@ -39,7 +40,8 @@
             lblVersion.AutoSize = true;
             lblVersion.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
             lblVersion.ForeColor = SystemColors.ButtonFace;
-            lblVersion.Location = new Point(12, 9);
+            lblVersion.Location = new Point(15, 11);
+            lblVersion.Margin = new Padding(4, 0, 4, 0);
             lblVersion.Name = "lblVersion";
             lblVersion.Size = new Size(61, 18);
             lblVersion.TabIndex = 0;
@@ -47,10 +49,12 @@
             // 
             // lblCustomerCardId
             // 
+            lblCustomerCardId.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
             lblCustomerCardId.ForeColor = SystemColors.ButtonFace;
-            lblCustomerCardId.Location = new Point(6, 31);
+            lblCustomerCardId.Location = new Point(8, 37);
+            lblCustomerCardId.Margin = new Padding(4, 0, 4, 0);
             lblCustomerCardId.Name = "lblCustomerCardId";
-            lblCustomerCardId.Size = new Size(100, 18);
+            lblCustomerCardId.Size = new Size(146, 22);
             lblCustomerCardId.TabIndex = 1;
             lblCustomerCardId.Text = "Customer card ID";
             // 
@@ -62,31 +66,40 @@
             gbCustomerSignIn.Controls.Add(lblCustomerCardPassword);
             gbCustomerSignIn.Controls.Add(txtCustomerCardID);
             gbCustomerSignIn.Controls.Add(lblCustomerCardId);
+            gbCustomerSignIn.Font = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
             gbCustomerSignIn.ForeColor = SystemColors.ButtonFace;
-            gbCustomerSignIn.Location = new Point(12, 68);
+            gbCustomerSignIn.Location = new Point(15, 82);
+            gbCustomerSignIn.Margin = new Padding(4);
             gbCustomerSignIn.Name = "gbCustomerSignIn";
-            gbCustomerSignIn.Size = new Size(309, 156);
+            gbCustomerSignIn.Padding = new Padding(4);
+            gbCustomerSignIn.Size = new Size(439, 174);
             gbCustomerSignIn.TabIndex = 2;
             gbCustomerSignIn.TabStop = false;
-            gbCustomerSignIn.Text = "Customer card";
+            gbCustomerSignIn.Text = "Sign in";
+            gbCustomerSignIn.Visible = false;
             // 
             // lblCustomerSignInErrorMessage
             // 
-            lblCustomerSignInErrorMessage.BackColor = Color.LightCoral;
-            lblCustomerSignInErrorMessage.ForeColor = SystemColors.ControlText;
-            lblCustomerSignInErrorMessage.Location = new Point(6, 108);
+            lblCustomerSignInErrorMessage.BackColor = Color.Crimson;
+            lblCustomerSignInErrorMessage.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblCustomerSignInErrorMessage.ForeColor = Color.White;
+            lblCustomerSignInErrorMessage.Location = new Point(162, 122);
+            lblCustomerSignInErrorMessage.Margin = new Padding(4, 0, 4, 0);
             lblCustomerSignInErrorMessage.Name = "lblCustomerSignInErrorMessage";
-            lblCustomerSignInErrorMessage.Size = new Size(188, 36);
+            lblCustomerSignInErrorMessage.Size = new Size(271, 43);
             lblCustomerSignInErrorMessage.TabIndex = 6;
+            lblCustomerSignInErrorMessage.TextAlign = ContentAlignment.MiddleLeft;
             lblCustomerSignInErrorMessage.Visible = false;
             // 
             // btnCustomerSignIn
             // 
             btnCustomerSignIn.BackColor = SystemColors.ButtonFace;
+            btnCustomerSignIn.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
             btnCustomerSignIn.ForeColor = SystemColors.ControlText;
-            btnCustomerSignIn.Location = new Point(200, 108);
+            btnCustomerSignIn.Location = new Point(8, 122);
+            btnCustomerSignIn.Margin = new Padding(4);
             btnCustomerSignIn.Name = "btnCustomerSignIn";
-            btnCustomerSignIn.Size = new Size(103, 36);
+            btnCustomerSignIn.Size = new Size(146, 43);
             btnCustomerSignIn.TabIndex = 5;
             btnCustomerSignIn.Text = "Sign in";
             btnCustomerSignIn.UseVisualStyleBackColor = false;
@@ -94,37 +107,59 @@
             // 
             // txtCustomerCardPassword
             // 
-            txtCustomerCardPassword.Location = new Point(112, 64);
+            txtCustomerCardPassword.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            txtCustomerCardPassword.Location = new Point(162, 77);
+            txtCustomerCardPassword.Margin = new Padding(4);
             txtCustomerCardPassword.Name = "txtCustomerCardPassword";
-            txtCustomerCardPassword.Size = new Size(191, 23);
+            txtCustomerCardPassword.Size = new Size(270, 26);
             txtCustomerCardPassword.TabIndex = 4;
             txtCustomerCardPassword.UseSystemPasswordChar = true;
+            txtCustomerCardPassword.KeyUp += txtCustomerCardPassword_KeyUp;
             // 
             // lblCustomerCardPassword
             // 
-            lblCustomerCardPassword.Location = new Point(6, 67);
+            lblCustomerCardPassword.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblCustomerCardPassword.Location = new Point(8, 80);
+            lblCustomerCardPassword.Margin = new Padding(4, 0, 4, 0);
             lblCustomerCardPassword.Name = "lblCustomerCardPassword";
-            lblCustomerCardPassword.Size = new Size(100, 21);
+            lblCustomerCardPassword.Size = new Size(146, 25);
             lblCustomerCardPassword.TabIndex = 3;
             lblCustomerCardPassword.Text = "Password";
             // 
             // txtCustomerCardID
             // 
-            txtCustomerCardID.Location = new Point(112, 26);
+            txtCustomerCardID.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            txtCustomerCardID.Location = new Point(162, 34);
+            txtCustomerCardID.Margin = new Padding(4);
             txtCustomerCardID.Name = "txtCustomerCardID";
-            txtCustomerCardID.Size = new Size(64, 23);
+            txtCustomerCardID.Size = new Size(81, 26);
             txtCustomerCardID.TabIndex = 2;
+            // 
+            // chkToggleCustomerCardSignIn
+            // 
+            chkToggleCustomerCardSignIn.Appearance = Appearance.Button;
+            chkToggleCustomerCardSignIn.Location = new Point(15, 45);
+            chkToggleCustomerCardSignIn.Margin = new Padding(4);
+            chkToggleCustomerCardSignIn.Name = "chkToggleCustomerCardSignIn";
+            chkToggleCustomerCardSignIn.Size = new Size(175, 29);
+            chkToggleCustomerCardSignIn.TabIndex = 3;
+            chkToggleCustomerCardSignIn.Text = "Customer card sign in";
+            chkToggleCustomerCardSignIn.UseVisualStyleBackColor = true;
+            chkToggleCustomerCardSignIn.CheckedChanged += chkToggleCustomerCardSignIn_CheckedChanged;
             // 
             // RestrictedAccessDesktopForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(9F, 18F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1029, 540);
             ControlBox = false;
+            Controls.Add(chkToggleCustomerCardSignIn);
             Controls.Add(gbCustomerSignIn);
             Controls.Add(lblVersion);
+            Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
             FormBorderStyle = FormBorderStyle.None;
+            Margin = new Padding(4);
             MaximizeBox = false;
             MinimizeBox = false;
             Name = "RestrictedAccessDesktopForm";
@@ -150,5 +185,6 @@
         private TextBox txtCustomerCardID;
         private Button btnCustomerSignIn;
         private Label lblCustomerSignInErrorMessage;
+        private CheckBox chkToggleCustomerCardSignIn;
     }
 }

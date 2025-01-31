@@ -1,4 +1,4 @@
-﻿using Ccs3ClientAppWindowsService.Messages.LocalClient.Declarations;
+﻿using Ccs3ClientApp.Messages.LocalClient.Declarations;
 using System;
 using System.Collections.Generic;
 using System.Linq;

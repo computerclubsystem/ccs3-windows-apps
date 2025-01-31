@@ -1,6 +1,6 @@
-﻿namespace Ccs3ClientAppWindowsService.Messages.LocalClient.Declarations;
+﻿using Ccs3ClientApp.Messages.Declarations;
 
-public class LocalClientToDeviceReplyMessageHeader {
-    public string Type { get; set; }
-    public string CorrelationId { get; set; }
+namespace Ccs3ClientApp.Messages.LocalClient.Declarations;
+
+public class LocalClientToDeviceReplyMessageHeader : ReplyMessageHeader {
 }

@@ -8,6 +8,8 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.WebSockets;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
@@ -211,10 +213,16 @@ public class Worker : BackgroundService {
                 }
             case LocalClientToDeviceRequestMessageType.StartOnPrepaidTariff: {
                     var msg = DeserializeLocalClientToDeviceRequestMessage<LocalClientToDeviceStartOnPrepaidTariffRequestMessage, LocalClientToDeviceStartOnPrepaidTariffRequestMessageBody>(stringData);
-                    var toServerRequestMsg = DeviceToServerStartOnPrepaidTariffRequestMessageHelper.CreateMessage();
-                    toServerRequestMsg.Body.TariffId = msg.Body.TariffId;
-                    toServerRequestMsg.Body.PasswordHash = msg.Body.PasswordHash; ;
-                    SendDeviceToServerRequestMessage(toServerRequestMsg, toServerRequestMsg.Header);
+                    var toServerReqMsg = DeviceToServerStartOnPrepaidTariffRequestMessageHelper.CreateMessage();
+                    toServerReqMsg.Body.TariffId = msg.Body.TariffId;
+                    toServerReqMsg.Body.PasswordHash = msg.Body.PasswordHash; ;
+                    SendDeviceToServerRequestMessage(toServerReqMsg, toServerReqMsg.Header);
+                    break;
+                }
+            case LocalClientToDeviceRequestMessageType.EndDeviceSessionByCustomer: {
+                    var msg = DeserializeLocalClientToDeviceRequestMessage<LocalClientToDeviceEndDeviceSessionByCustomerRequestMessage, LocalClientToDeviceEndDeviceSessionByCustomerRequestMessageBody>(stringData);
+                    var toServerReqMsg = DeviceToServerEndDeviceSessionRequestMessageHelper.CreateMessage();
+                    SendDeviceToServerRequestMessage(toServerReqMsg, toServerReqMsg.Header);
                     break;
                 }
         }
@@ -350,6 +358,21 @@ public class Worker : BackgroundService {
 
     private void ProcessServerToDeviceStartOnPrepaidTariffReplyMessage(ServerToDeviceReplyMessage<ServerToDeviceStartOnPrepaidTariffReplyMessageBody> msg) {
         // TODO: Send reply to the client
+        var dtlcMsg = DeviceToLocalClientStartOnPrepaidTariffReplyMessageHelper.CreateMessage();
+        TransferReplyHeader(msg.Header, dtlcMsg.Header);
+        dtlcMsg.Body.Success = msg.Body.Success;
+        dtlcMsg.Body.PasswordDoesNotMatch = msg.Body.PasswordDoesNotMatch;
+        dtlcMsg.Body.AlreadyInUse = msg.Body.AlreadyInUse;  
+        dtlcMsg.Body.RemainingSeconds = msg.Body.RemainingSeconds;
+        var serialized = SerializeDeviceToLocalClientReplyMessage(dtlcMsg);
+        SendToAllLocalClients(serialized);
+    }
+
+    private void TransferReplyHeader(ReplyMessageHeader source, ReplyMessageHeader destination) {
+        destination.CorrelationId = source.CorrelationId;
+        destination.MessageErrors = source.MessageErrors;
+        destination.Failure = source.Failure;
+        destination.Type = source.Type;
     }
 
     private void ProcessDeviceConfigurationNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> msg) {
@@ -361,6 +384,8 @@ public class Worker : BackgroundService {
         var msgToSend = DeviceToLocalClientCurrentStatusNotificationMessageHelper.CreateMessage();
         msgToSend.Body = new DeviceToLocalClientCurrentStatusNotificationMessageBody {
             Started = msg.Body.Started,
+            CanBeStoppedByCustomer = msg.Body.CanBeStoppedByCustomer,
+            TariffId = msg.Body.TariffId,
             Amounts = msg.Body.Amounts,
         };
         string serialized = SerializeDeviceToLocalClientNotificationMessage(msgToSend);
@@ -436,6 +461,11 @@ public class Worker : BackgroundService {
     }
 
     private string SerializeDeviceToLocalClientNotificationMessage<TBody>(DeviceToLocalClientNotificationMessage<TBody> msg) {
+        var serializedString = JsonSerializer.Serialize(msg, _jsonSerializerOptions);
+        return serializedString;
+    }
+
+    private string SerializeDeviceToLocalClientReplyMessage<TBody>(DeviceToLocalClientReplyMessage<TBody> msg) {
         var serializedString = JsonSerializer.Serialize(msg, _jsonSerializerOptions);
         return serializedString;
     }
@@ -619,6 +649,38 @@ public class Worker : BackgroundService {
         ReadOnlyMemory<byte> buffer = new(Encoding.UTF8.GetBytes(serialized));
         _state.LastDataSentAt = GetNow();
         _serverWsConnector.SendData(buffer);
+    }
+
+    // TODO:
+    private void SendDeviceToServerRequestMessageAndWaitForReply(object msg, DeviceToServerRequestMessageHeader messageHeader) {
+        if (string.IsNullOrWhiteSpace(messageHeader.CorrelationId)) {
+            messageHeader.CorrelationId = Guid.NewGuid().ToString();
+        }
+        string serialized = SerializeMessage(msg);
+        ReadOnlyMemory<byte> buffer = new(Encoding.UTF8.GetBytes(serialized));
+        _state.LastDataSentAt = GetNow();
+        Subject<string> mySubject = new Subject<string>();
+        _serverWsConnector.SendData(buffer);
+    }
+
+    private async Task<bool> SendDeviceToLocalClientReplyMessage<TBody>(DeviceToLocalClientReplyMessage<TBody> msg, WebSocket ws) {
+        string serialized = SerializeDeviceToLocalClientReplyMessage(msg);
+        ReadOnlyMemory<byte> bytes = new(Encoding.UTF8.GetBytes(serialized));
+        _state.LastLocalClientDataSentAt = GetNow();
+        try {
+            ExecuteIfDebugIsEnabled(() => {
+                _logger.LogDebug(new EventId(100), "Sending local client reply message: {0}", serialized);
+            });
+            await ws.SendAsync(bytes, WebSocketMessageType.Text, true, _state.CancellationToken);
+            return true;
+        } catch (Exception ex) {
+            ExecuteIfDebugIsEnabled(() => {
+                _logger.LogError(new EventId(100), ex, "Can't send DeviceToLocalClientReplyMessage message");
+            });
+            //SendDataError?.Invoke(this, new SendDataErrorEventArgs { Exception = ex });
+            return false;
+        }
+        //_wsConnector.SendData(buffer);
     }
 
     private async Task<bool> SendDeviceToLocalClientNotificationMessage<TBody>(DeviceToLocalClientNotificationMessage<TBody> msg, WebSocket ws) {

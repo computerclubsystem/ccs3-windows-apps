@@ -1,6 +1,6 @@
 using Ccs3ClientApp.Messages;
 using Ccs3ClientApp.Messages.Declarations;
-using Ccs3ClientAppWindowsService.Messages.LocalClient.Declarations;
+using Ccs3ClientApp.Messages.LocalClient.Declarations;
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -46,6 +46,10 @@ namespace Ccs3ClientApp {
         }
 
         private void CreateRestrictedDesktop() {
+#if DEBUG
+            DebugCreateRestrictedDesktop();
+            return;
+#endif
             //_state.DesktopService.CloseDesktop(_state.DesktopService.GetDefaultDesktopPointer());
             IntPtr restrictedAccessDesktopPointer = _state.DesktopService.CreateRestrictedAccessDesktop(_state.RestrictedAccessDesktopName);
             if (restrictedAccessDesktopPointer != IntPtr.Zero) {
@@ -63,21 +67,45 @@ namespace Ccs3ClientApp {
             }
         }
 
+        private void DebugCreateRestrictedDesktop() {
+            Task.Factory.StartNew(() => {
+                _state.RestrictedAccessDesktopForm = new();
+                _state.RestrictedAccessDesktopForm.WindowState = FormWindowState.Normal;
+                _state.RestrictedAccessDesktopForm.FormBorderStyle = FormBorderStyle.Sizable;
+                _state.RestrictedAccessDesktopForm.MinimizeBox = true;
+                _state.RestrictedAccessDesktopForm.MaximizeBox = true;
+                _state.RestrictedAccessDesktopForm.ControlBox = true;
+                _state.RestrictedAccessDesktopForm.ShowInTaskbar = true;
+                _state.RestrictedAccessDesktopForm.CustomerSignIn += RadForm_CustomerSignIn;
+                Application.Run(_state.RestrictedAccessDesktopForm);
+            });
+
+        }
+
         private async void RadForm_CustomerSignIn(object? sender, CustomerSignInEventArgs e) {
+            await SendLocalClientToDeviceStartOnPrepaidTariffRequestMessage(e.CustomerCardID, e.PasswordHash);
+        }
+
+        private async Task SendLocalClientToDeviceStartOnPrepaidTariffRequestMessage(int tariffId, string passwordHash) {
             var reqMsg = LocalClientToDeviceStartOnPrepaidTariffRequestMessageHelper.CreateMessage();
-            reqMsg.Body.TariffId = e.CustomerCardID;
-            reqMsg.Body.PasswordHash = e.PasswordHash;
+            reqMsg.Body.TariffId = tariffId;
+            reqMsg.Body.PasswordHash = passwordHash;
             await SendMessage(reqMsg);
         }
 
-        private void testButtonSwitchToRestrictedAccessDesktopFor3Seconds_Click(object sender, EventArgs e) {
-            _state.DesktopService.SwitchToRestrictedAccessDesktop();
-            Task.Run(() => {
-                //_state.DesktopService.SetCurrentThreadDesktop(_state.DesktopService.GetRestrictedAccessDesktopPointer());
-                Thread.Sleep(TimeSpan.FromSeconds(3));
-                _state.DesktopService.SwitchToDefaultDesktop();
-            });
+        private async Task SendLocalClientToDeviceEndDeviceSessionByCustomerRequestMessage() {
+            var reqMsg = LocalClientToDeviceEndDeviceSessionByCustomerRequestMessageHelper.CreateMessage();
+            await SendMessage(reqMsg);
         }
+
+        //private void testButtonSwitchToRestrictedAccessDesktopFor3Seconds_Click(object sender, EventArgs e) {
+        //    _state.DesktopService.SwitchToRestrictedAccessDesktop();
+        //    Task.Run(() => {
+        //        //_state.DesktopService.SetCurrentThreadDesktop(_state.DesktopService.GetRestrictedAccessDesktopPointer());
+        //        Thread.Sleep(TimeSpan.FromSeconds(3));
+        //        _state.DesktopService.SwitchToDefaultDesktop();
+        //    });
+        //}
 
         private void MainForm_Load(object sender, EventArgs e) {
             notifyIconMain.Visible = true;
@@ -200,7 +228,13 @@ namespace Ccs3ClientApp {
                         ProcessDeviceToLocalClientCurrentStatusNotificationMessage(msg);
                         break;
                     }
+                case DeviceToLocalClientReplyMessageType.StartOnPrepaidTariff: {
+                        var msg = DeserializeDeviceToLocalClientReplyMessage<DeviceToLocalClientStartOnPrepaidTariffReplyMessage, DeviceToLocalClientStartOnPrepaidTariffReplyMessageBody>(stringData);
+                        ProcessDeviceToLocalClientStartOnPrepaidTariffReplyMessage(msg);
+                        break;
+                    }
             }
+
             //LocalClientPartialMessage partialMsg = DeserializeLocalClientPartialMessage(stringData);
             //if (partialMsg?.Header?.Type == null) {
             //    // TODO: Can't process the message
@@ -230,6 +264,27 @@ namespace Ccs3ClientApp {
             //}
         }
 
+        private void ProcessDeviceToLocalClientStartOnPrepaidTariffReplyMessage(DeviceToLocalClientStartOnPrepaidTariffReplyMessage msg) {
+            bool passwordDoesNotMatch = msg.Body.PasswordDoesNotMatch ?? false;
+            bool alreadyInUse = msg.Body.AlreadyInUse ?? false;
+            bool notAllowed = msg.Body.NotAllowed ?? false;
+            bool success = msg.Body.Success ?? false;
+            if (msg.Header.Failure.HasValue && msg.Header.Failure.Value == true) {
+                notAllowed = false;
+                success = false;
+            }
+            _state.RestrictedAccessDesktopForm.SetCustomerSignInResult(passwordDoesNotMatch, notAllowed, alreadyInUse, success);
+        }
+
+        private TMessage DeserializeDeviceToLocalClientReplyMessage<TMessage, TBody>(string jsonString) where TMessage : DeviceToLocalClientReplyMessage<TBody>, new() {
+            var deserialized = JsonSerializer.Deserialize<DeviceToLocalClientReplyMessage<object>>(jsonString, _state.JsonSerializerOptions);
+            var deserializedMsg = CreateTypedDeviceToLocalClientReplyMessageFromGenericMessage<TBody>(deserialized);
+            TMessage result = new TMessage();
+            result.Header = deserializedMsg.Header;
+            result.Body = deserializedMsg.Body;
+            return result;
+        }
+
         private TMessage DeserializeDeviceToLocalClientNotificationMessage<TMessage, TBody>(string jsonString) where TMessage : DeviceToLocalClientNotificationMessage<TBody>, new() {
             var deserialized = JsonSerializer.Deserialize<DeviceToLocalClientNotificationMessage<object>>(jsonString, _state.JsonSerializerOptions);
             var deserializedMsg = CreateTypedDeviceToLocalClientNotificationMessageFromGenericMessage<TBody>(deserialized);
@@ -250,11 +305,11 @@ namespace Ccs3ClientApp {
             return deserializedMsg;
         }
 
-        private DeviceToLocalClientNotificationMessage<TBody> CreateTypedMessageFromGenericDeviceToLocalClientNotificationMessage<TBody>(PartialMessage msg) {
+        private DeviceToLocalClientReplyMessage<TBody> CreateTypedDeviceToLocalClientReplyMessageFromGenericMessage<TBody>(DeviceToLocalClientReplyMessage<object> msg) {
             string bodyString = msg.Body.ToString()!;
             TBody? body = DeserializeBody<TBody>(bodyString);
-            DeviceToLocalClientNotificationMessage<TBody> deserializedMsg = new DeviceToLocalClientNotificationMessage<TBody>();
-            deserializedMsg.Header = new DeviceToLocalClientNotificationMessageHeader {
+            DeviceToLocalClientReplyMessage<TBody> deserializedMsg = new DeviceToLocalClientReplyMessage<TBody>();
+            deserializedMsg.Header = new DeviceToLocalClientReplyMessageHeader {
                 Type = msg.Header.Type,
             };
             deserializedMsg.Body = body!;
@@ -357,6 +412,17 @@ namespace Ccs3ClientApp {
             SwitchToDesktop(shouldSwitchToSecuredDesktop);
 #endif
             SafeChangeUI(() => {
+                bool canBeStoppedByCustomer = _state.CurrentStatusNotificationMessage.Body.CanBeStoppedByCustomer.HasValue ? _state.CurrentStatusNotificationMessage.Body.CanBeStoppedByCustomer.Value : false;
+                if (started && canBeStoppedByCustomer) {
+                    btnEndSession.Visible = true;
+                } else {
+                    btnEndSession.Visible = false;
+                }
+
+                if (canBeStoppedByCustomer && _state.CurrentStatusNotificationMessage.Body.TariffId.HasValue) {
+
+                }
+
                 var amounts = _state.CurrentStatusNotificationMessage.Body.Amounts;
                 if (amounts.RemainingSeconds.HasValue && amounts.RemainingSeconds.Value > 0) {
                     //var ts = TimeSpan.FromSeconds(amounts.RemainingSeconds.Value);
@@ -368,7 +434,7 @@ namespace Ccs3ClientApp {
                     //string finalText = string.Join(" ", parts);
                     string finalText = SecondsToDurationText(amounts.RemainingSeconds.Value);
                     lblRemainingTimeValue.Text = finalText;
-                    notifyIconMain.Text = "Ccs3 Client App. Оставащо време " + finalText;
+                    notifyIconMain.Text = "Ccs3 Client App. Remaining time " + finalText;
                 } else {
                     lblRemainingTimeValue.Text = "0";
                 }
@@ -478,6 +544,19 @@ namespace Ccs3ClientApp {
             public JsonSerializerOptions JsonSerializerOptions { get; set; }
             public DateTimeOffset LastServerPingSentAt { get; set; }
             public RestrictedAccessDesktopForm RestrictedAccessDesktopForm { get; set; }
+        }
+
+        private void MainForm_Click(object sender, EventArgs e) {
+#if DEBUG
+#endif
+        }
+
+        private void btnEndSession_Click(object sender, EventArgs e) {
+            DialogResult dlgResult = MessageBox.Show("Do you want to end the session?", "End session", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button2);
+            if (dlgResult != DialogResult.Yes) {
+                return;
+            }
+            SendLocalClientToDeviceEndDeviceSessionByCustomerRequestMessage();
         }
     }
 }

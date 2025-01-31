@@ -1,4 +1,4 @@
-﻿namespace Ccs3ClientAppWindowsService.Messages.LocalClient.Declarations;
+﻿namespace Ccs3ClientApp.Messages.LocalClient.Declarations;
 
 public static class DeviceToLocalClientNotificationMessageType {
     public const string Configuration = "configuration-notification";

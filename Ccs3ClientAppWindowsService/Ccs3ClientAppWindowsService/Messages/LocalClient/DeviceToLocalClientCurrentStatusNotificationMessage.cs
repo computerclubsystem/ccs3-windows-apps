@@ -5,6 +5,8 @@ namespace Ccs3ClientAppWindowsService.Messages.LocalClient;
 
 public class DeviceToLocalClientCurrentStatusNotificationMessageBody {
     public bool Started { get; set; }
+    public int? TariffId { get; set; }
+    public bool? CanBeStoppedByCustomer { get; set; }
     public DeviceStatusAmounts Amounts { get; set; }
 }
 

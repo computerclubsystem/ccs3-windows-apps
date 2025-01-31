@@ -37,6 +37,7 @@
             lblTotalTimeValue = new Label();
             lblTotalSum = new Label();
             lblTotalSumValue = new Label();
+            btnEndSession = new Button();
             SuspendLayout();
             // 
             // notifyIconMain
@@ -48,17 +49,19 @@
             // 
             lblRemainingTime.AutoSize = true;
             lblRemainingTime.Font = new Font("Arial", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            lblRemainingTime.Location = new Point(12, 9);
+            lblRemainingTime.Location = new Point(24, 16);
+            lblRemainingTime.Margin = new Padding(6, 0, 6, 0);
             lblRemainingTime.Name = "lblRemainingTime";
-            lblRemainingTime.Size = new Size(203, 27);
+            lblRemainingTime.Size = new Size(179, 27);
             lblRemainingTime.TabIndex = 0;
-            lblRemainingTime.Text = "Оставащо време";
+            lblRemainingTime.Text = "Remaining time";
             // 
             // lblRemainingTimeValue
             // 
             lblRemainingTimeValue.AutoSize = true;
             lblRemainingTimeValue.Font = new Font("Arial", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            lblRemainingTimeValue.Location = new Point(265, 9);
+            lblRemainingTimeValue.Location = new Point(270, 16);
+            lblRemainingTimeValue.Margin = new Padding(6, 0, 6, 0);
             lblRemainingTimeValue.Name = "lblRemainingTimeValue";
             lblRemainingTimeValue.Size = new Size(25, 27);
             lblRemainingTimeValue.TabIndex = 1;
@@ -68,17 +71,19 @@
             // 
             lblStartedAt.AutoSize = true;
             lblStartedAt.Font = new Font("Arial", 18F);
-            lblStartedAt.Location = new Point(12, 63);
+            lblStartedAt.Location = new Point(24, 63);
+            lblStartedAt.Margin = new Padding(6, 0, 6, 0);
             lblStartedAt.Name = "lblStartedAt";
-            lblStartedAt.Size = new Size(163, 27);
+            lblStartedAt.Size = new Size(117, 27);
             lblStartedAt.TabIndex = 2;
-            lblStartedAt.Text = "Стартиран на";
+            lblStartedAt.Text = "Started at";
             // 
             // lblStartedAtValue
             // 
             lblStartedAtValue.AutoSize = true;
             lblStartedAtValue.Font = new Font("Arial", 18F);
-            lblStartedAtValue.Location = new Point(268, 63);
+            lblStartedAtValue.Location = new Point(270, 63);
+            lblStartedAtValue.Margin = new Padding(6, 0, 6, 0);
             lblStartedAtValue.Name = "lblStartedAtValue";
             lblStartedAtValue.Size = new Size(20, 27);
             lblStartedAtValue.TabIndex = 3;
@@ -88,17 +93,19 @@
             // 
             lblTotalTime.AutoSize = true;
             lblTotalTime.Font = new Font("Arial", 18F);
-            lblTotalTime.Location = new Point(12, 124);
+            lblTotalTime.Location = new Point(24, 110);
+            lblTotalTime.Margin = new Padding(6, 0, 6, 0);
             lblTotalTime.Name = "lblTotalTime";
-            lblTotalTime.Size = new Size(219, 27);
+            lblTotalTime.Size = new Size(152, 27);
             lblTotalTime.TabIndex = 4;
-            lblTotalTime.Text = "Използвано време";
+            lblTotalTime.Text = "Elapsed time";
             // 
             // lblTotalTimeValue
             // 
             lblTotalTimeValue.AutoSize = true;
             lblTotalTimeValue.Font = new Font("Arial", 18F);
-            lblTotalTimeValue.Location = new Point(268, 124);
+            lblTotalTimeValue.Location = new Point(270, 110);
+            lblTotalTimeValue.Margin = new Padding(6, 0, 6, 0);
             lblTotalTimeValue.Name = "lblTotalTimeValue";
             lblTotalTimeValue.Size = new Size(25, 27);
             lblTotalTimeValue.TabIndex = 5;
@@ -108,27 +115,42 @@
             // 
             lblTotalSum.AutoSize = true;
             lblTotalSum.Font = new Font("Arial", 18F);
-            lblTotalSum.Location = new Point(12, 190);
+            lblTotalSum.Location = new Point(24, 158);
+            lblTotalSum.Margin = new Padding(6, 0, 6, 0);
             lblTotalSum.Name = "lblTotalSum";
-            lblTotalSum.Size = new Size(71, 27);
+            lblTotalSum.Size = new Size(62, 27);
             lblTotalSum.TabIndex = 6;
-            lblTotalSum.Text = "Сума";
+            lblTotalSum.Text = "Total";
             // 
             // lblTotalSumValue
             // 
             lblTotalSumValue.AutoSize = true;
             lblTotalSumValue.Font = new Font("Arial", 18F);
-            lblTotalSumValue.Location = new Point(268, 190);
+            lblTotalSumValue.Location = new Point(270, 158);
+            lblTotalSumValue.Margin = new Padding(6, 0, 6, 0);
             lblTotalSumValue.Name = "lblTotalSumValue";
             lblTotalSumValue.Size = new Size(58, 27);
             lblTotalSumValue.TabIndex = 7;
             lblTotalSumValue.Text = "0.00";
             // 
+            // btnEndSession
+            // 
+            btnEndSession.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            btnEndSession.Location = new Point(12, 234);
+            btnEndSession.Name = "btnEndSession";
+            btnEndSession.Size = new Size(175, 48);
+            btnEndSession.TabIndex = 8;
+            btnEndSession.Text = "End session";
+            btnEndSession.UseVisualStyleBackColor = true;
+            btnEndSession.Visible = false;
+            btnEndSession.Click += btnEndSession_Click;
+            // 
             // MainForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(14F, 27F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(638, 373);
+            ClientSize = new Size(557, 294);
+            Controls.Add(btnEndSession);
             Controls.Add(lblTotalSumValue);
             Controls.Add(lblTotalSum);
             Controls.Add(lblTotalTimeValue);
@@ -137,10 +159,13 @@
             Controls.Add(lblStartedAt);
             Controls.Add(lblRemainingTimeValue);
             Controls.Add(lblRemainingTime);
+            Font = new Font("Arial", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            Margin = new Padding(6, 5, 6, 5);
             Name = "MainForm";
             Text = "Ccs3 Client App";
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
+            Click += MainForm_Click;
             ResumeLayout(false);
             PerformLayout();
         }
@@ -156,5 +181,6 @@
         private Label lblTotalTimeValue;
         private Label lblTotalSum;
         private Label lblTotalSumValue;
+        private Button btnEndSession;
     }
 }

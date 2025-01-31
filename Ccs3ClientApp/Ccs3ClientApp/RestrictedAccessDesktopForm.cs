@@ -24,7 +24,16 @@ namespace Ccs3ClientApp {
             _canClose = canClose;
         }
 
-        public void SetCustomerSignInResult(bool passwordDoesNotMatch, bool notAllowed, bool alreadyInUse) {
+        public void SetCustomerSignInResult(bool passwordDoesNotMatch, bool notAllowed, bool alreadyInUse, bool success) {
+            var action = () => SetSignInResult(passwordDoesNotMatch, notAllowed, alreadyInUse, success);
+            if (InvokeRequired) {
+                this.Invoke(action);
+            } else {
+                action();
+            }
+        }
+
+        private void SetSignInResult(bool passwordDoesNotMatch, bool notAllowed, bool alreadyInUse, bool success) {
             lblCustomerSignInErrorMessage.Visible = false;
             if (passwordDoesNotMatch) {
                 lblCustomerSignInErrorMessage.Text = "Password does not match";
@@ -34,6 +43,9 @@ namespace Ccs3ClientApp {
                 lblCustomerSignInErrorMessage.Visible = true;
             } else if (alreadyInUse) {
                 lblCustomerSignInErrorMessage.Text = "The card is already in use on another computer";
+                lblCustomerSignInErrorMessage.Visible = true;
+            } else if (!success) {
+                lblCustomerSignInErrorMessage.Text = "Generic error";
                 lblCustomerSignInErrorMessage.Visible = true;
             }
         }
@@ -49,6 +61,10 @@ namespace Ccs3ClientApp {
         }
 
         private void btnCustomerSignIn_Click(object sender, EventArgs e) {
+            OnSignIn();
+        }
+
+        private void OnSignIn() {
             lblCustomerSignInErrorMessage.Visible = false;
             bool customerCardParsed = int.TryParse(txtCustomerCardID.Text, out var cardId);
             if (!customerCardParsed) {
@@ -59,15 +75,17 @@ namespace Ccs3ClientApp {
                 return;
             }
             txtCustomerCardPassword.Text = string.Empty;
-            CustomerSignIn?.Invoke(this, new CustomerSignInEventArgs { CustomerCardID = cardId, PasswordHash = GetSha512(password) });
+            CustomerSignIn?.Invoke(this, new CustomerSignInEventArgs { CustomerCardID = cardId, PasswordHash = Utils.GetSha512(password) });
         }
 
-        private string GetSha512(string value) {
-            using var sha512 = SHA512.Create();
-            byte[] valueBytes = Encoding.UTF8.GetBytes(value);
-            byte[] hashBytes = sha512.ComputeHash(valueBytes);
-            string hashString = BitConverter.ToString(hashBytes).Replace("-", string.Empty).ToLower();
-            return hashString;
+        private void txtCustomerCardPassword_KeyUp(object sender, KeyEventArgs e) {
+            if (e.KeyCode == Keys.Enter) {
+                OnSignIn();
+            }
+        }
+
+        private void chkToggleCustomerCardSignIn_CheckedChanged(object sender, EventArgs e) {
+            gbCustomerSignIn.Visible = chkToggleCustomerCardSignIn.Checked;
         }
     }
 
