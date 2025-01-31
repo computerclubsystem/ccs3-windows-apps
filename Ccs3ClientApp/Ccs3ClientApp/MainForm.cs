@@ -1,16 +1,17 @@
 using Ccs3ClientApp.Messages;
 using Ccs3ClientApp.Messages.Declarations;
-using Ccs3ClientApp.Messages.LocalClient;
-using Ccs3ClientApp.Messages.LocalClient.Declarations;
-using Microsoft.VisualBasic;
+using Ccs3ClientAppWindowsService.Messages.LocalClient.Declarations;
 using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Web;
+using static System.Windows.Forms.AxHost;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace Ccs3ClientApp {
     public partial class MainForm : Form {
@@ -51,14 +52,22 @@ namespace Ccs3ClientApp {
                 // TODO: Use cancellation token
                 Task.Factory.StartNew(() => {
                     _state.DesktopService.SetCurrentThreadDesktop(restrictedAccessDesktopPointer);
-                    RestrictedAccessDesktopForm radForm = new();
-                    Application.Run(radForm);
+                    _state.RestrictedAccessDesktopForm = new();
+                    _state.RestrictedAccessDesktopForm.CustomerSignIn += RadForm_CustomerSignIn;
+                    Application.Run(_state.RestrictedAccessDesktopForm);
                 });
                 Debug.WriteLine(string.Format("Restricted desktop has been created: {0}", _state.DesktopService.GetRestrictedAccessDesktopPointer()));
             } else {
                 var lastError = _state.DesktopService.GetLastError();
                 Debug.WriteLine(string.Format("Cannot create restricted access desktop. Error {0}", lastError));
             }
+        }
+
+        private async void RadForm_CustomerSignIn(object? sender, CustomerSignInEventArgs e) {
+            var reqMsg = LocalClientToDeviceStartOnPrepaidTariffRequestMessageHelper.CreateMessage();
+            reqMsg.Body.TariffId = e.CustomerCardID;
+            reqMsg.Body.PasswordHash = e.PasswordHash;
+            await SendMessage(reqMsg);
         }
 
         private void testButtonSwitchToRestrictedAccessDesktopFor3Seconds_Click(object sender, EventArgs e) {
@@ -174,62 +183,106 @@ namespace Ccs3ClientApp {
         }
 
         private void ProcessServiceConnectorReceivedMessage(string stringData) {
-            LocalClientPartialMessage partialMsg = DeserializeLocalClientPartialMessage(stringData);
+            PartialMessage partialMsg = DeserializePartialMessage(stringData);
             if (partialMsg?.Header?.Type == null) {
                 // TODO: Can't process the message
                 return;
             }
-
             string msgType = partialMsg.Header.Type;
             switch (msgType) {
-                case LocalClientNotificationMessageType.Configuration:
-                    //// TODO: Deserialize to concrete message, not to LocalClientNotificationMessage<TBody>
-                    //var genericMsg = DeserializeLocalClientNotificationMessage<LocalClientConfigurationNotificationMessageBody>(stringData);
-                    //LocalClientConfigurationNotificationMessage msg = new() {
-                    //    Header = genericMsg.Header,
-                    //    Body = genericMsg.Body,
-                    //};
-                    //ProcessLocalClientConfigurationNotificationMessage(msg);
-                    var configurationNotificationMsg = DeserializeLocalClientNotificationMessage<LocalClientConfigurationNotificationMessage, LocalClientConfigurationNotificationMessageBody>(stringData);
-                    ProcessLocalClientConfigurationNotificationMessage(configurationNotificationMsg);
-                    break;
-                case LocalClientNotificationMessageType.Status:
-                    var statusNotificationMsg = DeserializeLocalClientNotificationMessage<LocalClientStatusNotificationMessage, LocalClientStatusNotificationMessageBody>(stringData);
-                    ProcessLocalClientStatusNotificationMessage(statusNotificationMsg);
-                    break;
-                default:
-                    // TODO: Unknown message type
-                    break;
+                case DeviceToLocalClientNotificationMessageType.Configuration: {
+                        var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientConfigurationNotificationMessage, DeviceToLocalClientConfigurationNotificationMessageBody>(stringData);
+                        ProcessDeviceToLocalClientConfigurationNotificationMessage(msg);
+                        break;
+                    }
+                case DeviceToLocalClientNotificationMessageType.CurrentStatus: {
+                        var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientCurrentStatusNotificationMessage, DeviceToLocalClientCurrentStatusNotificationMessageBody>(stringData);
+                        ProcessDeviceToLocalClientCurrentStatusNotificationMessage(msg);
+                        break;
+                    }
             }
+            //LocalClientPartialMessage partialMsg = DeserializeLocalClientPartialMessage(stringData);
+            //if (partialMsg?.Header?.Type == null) {
+            //    // TODO: Can't process the message
+            //    return;
+            //}
+
+            //string msgType = partialMsg.Header.Type;
             //switch (msgType) {
-            //    case MessageType.DeviceConfiguration:
-            //        Message<DeviceConfigurationNotificationMessageBody> deviceConfigurationMsg = CreateTypedMessageFromGenericMessage<DeviceConfigurationNotificationMessageBody>(msg);
-            //        ProcessDeviceConfigurationNotificationMessage(deviceConfigurationMsg);
+            //    case LocalClientNotificationMessageType.Configuration:
+            //        //// TODO: Deserialize to concrete message, not to LocalClientNotificationMessage<TBody>
+            //        //var genericMsg = DeserializeLocalClientNotificationMessage<LocalClientConfigurationNotificationMessageBody>(stringData);
+            //        //LocalClientConfigurationNotificationMessage msg = new() {
+            //        //    Header = genericMsg.Header,
+            //        //    Body = genericMsg.Body,
+            //        //};
+            //        //ProcessLocalClientConfigurationNotificationMessage(msg);
+            //        var configurationNotificationMsg = DeserializeLocalClientNotificationMessage<LocalClientConfigurationNotificationMessage, LocalClientConfigurationNotificationMessageBody>(stringData);
+            //        ProcessLocalClientConfigurationNotificationMessage(configurationNotificationMsg);
             //        break;
-            //    case MessageType.DeviceSetStatus:
-            //        Message<DeviceSetStatusNotificationMessageBody> deviceSetStatusNotificationMsg = CreateTypedMessageFromGenericMessage<DeviceSetStatusNotificationMessageBody>(msg);
-            //        ProcessDeviceSetStatusNotificationMessage(deviceSetStatusNotificationMsg);
+            //    case LocalClientNotificationMessageType.Status:
+            //        var statusNotificationMsg = DeserializeLocalClientNotificationMessage<LocalClientStatusNotificationMessage, LocalClientStatusNotificationMessageBody>(stringData);
+            //        ProcessLocalClientStatusNotificationMessage(statusNotificationMsg);
+            //        break;
+            //    default:
+            //        // TODO: Unknown message type
             //        break;
             //}
         }
 
-        private void ProcessLocalClientStatusNotificationMessage(LocalClientStatusNotificationMessage msg) {
-            _state.StatusNotificationMessage = msg;
+        private TMessage DeserializeDeviceToLocalClientNotificationMessage<TMessage, TBody>(string jsonString) where TMessage : DeviceToLocalClientNotificationMessage<TBody>, new() {
+            var deserialized = JsonSerializer.Deserialize<DeviceToLocalClientNotificationMessage<object>>(jsonString, _state.JsonSerializerOptions);
+            var deserializedMsg = CreateTypedDeviceToLocalClientNotificationMessageFromGenericMessage<TBody>(deserialized);
+            TMessage result = new TMessage();
+            result.Header = deserializedMsg.Header;
+            result.Body = deserializedMsg.Body;
+            return result;
+        }
+
+        private DeviceToLocalClientNotificationMessage<TBody> CreateTypedDeviceToLocalClientNotificationMessageFromGenericMessage<TBody>(DeviceToLocalClientNotificationMessage<object> msg) {
+            string bodyString = msg.Body.ToString()!;
+            TBody? body = DeserializeBody<TBody>(bodyString);
+            DeviceToLocalClientNotificationMessage<TBody> deserializedMsg = new DeviceToLocalClientNotificationMessage<TBody>();
+            deserializedMsg.Header = new DeviceToLocalClientNotificationMessageHeader {
+                Type = msg.Header.Type,
+            };
+            deserializedMsg.Body = body!;
+            return deserializedMsg;
+        }
+
+        private DeviceToLocalClientNotificationMessage<TBody> CreateTypedMessageFromGenericDeviceToLocalClientNotificationMessage<TBody>(PartialMessage msg) {
+            string bodyString = msg.Body.ToString()!;
+            TBody? body = DeserializeBody<TBody>(bodyString);
+            DeviceToLocalClientNotificationMessage<TBody> deserializedMsg = new DeviceToLocalClientNotificationMessage<TBody>();
+            deserializedMsg.Header = new DeviceToLocalClientNotificationMessageHeader {
+                Type = msg.Header.Type,
+            };
+            deserializedMsg.Body = body!;
+            return deserializedMsg;
+        }
+
+        private void ProcessDeviceToLocalClientCurrentStatusNotificationMessage(DeviceToLocalClientCurrentStatusNotificationMessage msg) {
+            _state.CurrentStatusNotificationMessage = msg;
             ProcessCurrentStatus();
         }
 
-        private void ProcessLocalClientConfigurationNotificationMessage(LocalClientConfigurationNotificationMessage msg) {
+        private void ProcessDeviceToLocalClientConfigurationNotificationMessage(DeviceToLocalClientConfigurationNotificationMessage msg) {
             _state.ConfigurationNotificationMessage = msg;
         }
 
-        private LocalClientPartialMessage DeserializeLocalClientPartialMessage(string jsonString) {
-            var deserialized = JsonSerializer.Deserialize<LocalClientPartialMessage>(jsonString, _state.JsonSerializerOptions);
+        //private LocalClientPartialMessage DeserializeLocalClientPartialMessage(string jsonString) {
+        //    var deserialized = JsonSerializer.Deserialize<LocalClientPartialMessage>(jsonString, _state.JsonSerializerOptions);
+        //    return deserialized;
+        //}
+
+        private PartialMessage DeserializePartialMessage(string jsonString) {
+            var deserialized = JsonSerializer.Deserialize<PartialMessage>(jsonString, _state.JsonSerializerOptions);
             return deserialized;
         }
 
-        private LocalClientNotificationMessage<TBody> DeserializeLocalClientNotificationMessageBody<TBody>(string jsonString) {
-            var deserialized = JsonSerializer.Deserialize<LocalClientNotificationMessage<object>>(jsonString, _state.JsonSerializerOptions);
-            var deserializedMsg = CreateTypedLocalClientNotificationMessageFromGenericMessage<TBody>(deserialized);
+        private DeviceToLocalClientNotificationMessage<TBody> DeserializeDeviceToLocalClientNotificationMessageBody<TBody>(string jsonString) {
+            var deserialized = JsonSerializer.Deserialize<DeviceToLocalClientNotificationMessage<object>>(jsonString, _state.JsonSerializerOptions);
+            var deserializedMsg = CreateTypedDeviceToLocalClientNotificationMessageFromGenericMessage<TBody>(deserialized);
             return deserializedMsg;
         }
 
@@ -247,28 +300,35 @@ namespace Ccs3ClientApp {
         //    return deserializedMsg;
         //}
 
-        private TMessage DeserializeLocalClientNotificationMessage<TMessage, TBody>(string jsonString) where TMessage : LocalClientNotificationMessage<TBody>, new() {
-            var deserialized = JsonSerializer.Deserialize<LocalClientNotificationMessage<object>>(jsonString, _state.JsonSerializerOptions);
-            // TODO: Can we use reflection to infer the TBody ?
-            var deserializedMsg = CreateTypedLocalClientNotificationMessageFromGenericMessage<TBody>(deserialized);
-            TMessage result = new TMessage();
-            result.Header = deserializedMsg.Header;
-            result.Body = deserializedMsg.Body;
-            return result;
-        }
+        //private TMessage DeserializeLocalClientNotificationMessage<TMessage, TBody>(string jsonString) where TMessage : LocalClientNotificationMessage<TBody>, new() {
+        //    var deserialized = JsonSerializer.Deserialize<LocalClientNotificationMessage<object>>(jsonString, _state.JsonSerializerOptions);
+        //    // TODO: Can we use reflection to infer the TBody ?
+        //    var deserializedMsg = CreateTypedLocalClientNotificationMessageFromGenericMessage<TBody>(deserialized);
+        //    TMessage result = new TMessage();
+        //    result.Header = deserializedMsg.Header;
+        //    result.Body = deserializedMsg.Body;
+        //    return result;
+        //}
 
         private TBody DeserializeBody<TBody>(string body) {
             var deserialized = JsonSerializer.Deserialize<TBody>(body, _state.JsonSerializerOptions);
             return deserialized;
         }
 
-        private LocalClientNotificationMessage<TBody> CreateTypedLocalClientNotificationMessageFromGenericMessage<TBody>(LocalClientNotificationMessage<object> msg) {
-            string bodyString = msg.Body.ToString()!;
-            TBody? body = DeserializeBody<TBody>(bodyString);
-            LocalClientNotificationMessage<TBody> deserializedMsg = new LocalClientNotificationMessage<TBody>();
-            deserializedMsg.Header = msg.Header;
-            deserializedMsg.Body = body!;
-            return deserializedMsg;
+        //private LocalClientNotificationMessage<TBody> CreateTypedLocalClientNotificationMessageFromGenericMessage<TBody>(LocalClientNotificationMessage<object> msg) {
+        //    string bodyString = msg.Body.ToString()!;
+        //    TBody? body = DeserializeBody<TBody>(bodyString);
+        //    LocalClientNotificationMessage<TBody> deserializedMsg = new LocalClientNotificationMessage<TBody>();
+        //    deserializedMsg.Header = msg.Header;
+        //    deserializedMsg.Body = body!;
+        //    return deserializedMsg;
+        //}
+
+        private ReadOnlyMemory<byte> SerializeMessage(object message) {
+            var serializedText = JsonSerializer.Serialize(message, _state.JsonSerializerOptions);
+            byte[] serializedByteArray = Encoding.UTF8.GetBytes(serializedText);
+            ReadOnlyMemory<byte> ro = new ReadOnlyMemory<byte>(serializedByteArray);
+            return serializedByteArray;
         }
 
         private void LocalServiceConnector_ValidatingRemoteCertificate(object? sender, ValidatingRemoteCertificateArgs e) {
@@ -288,16 +348,16 @@ namespace Ccs3ClientApp {
 
         private void ProcessCurrentStatus() {
             // TODO: Deal with desktop switching, displaying session information etc.
-            if (_state.StatusNotificationMessage?.Body == null) {
+            if (_state.CurrentStatusNotificationMessage?.Body == null) {
                 return;
             }
-            bool started = _state.StatusNotificationMessage.Body.Started;
+            bool started = _state.CurrentStatusNotificationMessage.Body.Started;
             bool shouldSwitchToSecuredDesktop = !started;
 #if !DEBUG
             SwitchToDesktop(shouldSwitchToSecuredDesktop);
 #endif
             SafeChangeUI(() => {
-                var amounts = _state.StatusNotificationMessage.Body.Amounts;
+                var amounts = _state.CurrentStatusNotificationMessage.Body.Amounts;
                 if (amounts.RemainingSeconds.HasValue && amounts.RemainingSeconds.Value > 0) {
                     //var ts = TimeSpan.FromSeconds(amounts.RemainingSeconds.Value);
                     //var hoursText = ts.Hours > 0 ? $"{ts.Hours}÷." : "";
@@ -377,9 +437,13 @@ namespace Ccs3ClientApp {
         }
 
         private async Task SendPingToServer() {
-            byte[] bytes = Encoding.UTF8.GetBytes("{\"header\":{\"type\":\"local-client-ping-request\"},\"body\":{}}");
-            ReadOnlyMemory<byte> ro = new ReadOnlyMemory<byte>(bytes);
-            await _state.LocalServiceConnector.SendData(ro);
+            var reqMsg = LocalClientToDevicePingNotificationMessageHelper.CreateMessage();
+            await SendMessage(reqMsg);
+        }
+
+        private async Task SendMessage(object message) {
+            var serialized = SerializeMessage(message);
+            await _state.LocalServiceConnector.SendData(serialized);
         }
 
         private DateTimeOffset GetNow() {
@@ -396,16 +460,24 @@ namespace Ccs3ClientApp {
             return options;
         }
 
+        private async void button1_Click(object sender, EventArgs e) {
+            //var reqMsg = LocalClientToDeviceStartOnPrepaidTariffRequestMessageHelper.CreateMessage();
+            //reqMsg.Body.TariffId = 140;
+            //reqMsg.Body.PasswordHash = GetSha512("123");
+            //await SendMessage(reqMsg);
+        }
+
         private class MainFormState {
             public RestrictedAccessDesktopService DesktopService { get; set; }
             public readonly string RestrictedAccessDesktopName = "RestrictedAccessDesktop";
             public Uri LocalServiceUri { get; set; }
             public WebSocketConnector LocalServiceConnector { get; set; }
             public CancellationToken CancellationToken { get; set; }
-            public LocalClientConfigurationNotificationMessage? ConfigurationNotificationMessage { get; set; }
-            public LocalClientStatusNotificationMessage? StatusNotificationMessage { get; set; }
+            public DeviceToLocalClientConfigurationNotificationMessage? ConfigurationNotificationMessage { get; set; }
+            public DeviceToLocalClientCurrentStatusNotificationMessage? CurrentStatusNotificationMessage { get; set; }
             public JsonSerializerOptions JsonSerializerOptions { get; set; }
             public DateTimeOffset LastServerPingSentAt { get; set; }
+            public RestrictedAccessDesktopForm RestrictedAccessDesktopForm { get; set; }
         }
     }
 }

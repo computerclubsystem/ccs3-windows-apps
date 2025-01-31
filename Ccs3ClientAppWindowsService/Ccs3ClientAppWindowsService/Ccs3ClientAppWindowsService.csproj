@@ -2,7 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0-windows</TargetFramework>
-	<PublishUrl>bin\Release\net9.0-windows\publish\win-x64\</PublishUrl>
+	<PublishUrl>bin\Release\net9.0-windows\win-x64\publish</PublishUrl>
+	<PublishDir>bin\Release\net9.0-windows\win-x64\publish</PublishDir>
 	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <Nullable>enable</Nullable>
     <SelfContained>true</SelfContained>
@@ -10,17 +11,15 @@
 	<DeleteExistingFiles>true</DeleteExistingFiles>
     <PublishReadyToRun>false</PublishReadyToRun>
 	<WebPublishMethod>FileSystem</WebPublishMethod>
+	<PublishProvider>FileSystem</PublishProvider>
     <ImplicitUsings>enable</ImplicitUsings>
-	<AssemblyVersion>3.0.0.15</AssemblyVersion>
+	<AssemblyVersion>3.0.0.16</AssemblyVersion>
 	<RepositoryUrl>https://github.com/computerclubsystem/ccs3-windows-apps</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Messages\Device\" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.1" />
+    <PackageReference Include="System.Reactive" Version="6.0.1" />
   </ItemGroup>
 </Project>

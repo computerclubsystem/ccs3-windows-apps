@@ -1,4 +1,6 @@
 using Ccs3ClientAppWindowsService.Messages;
+using Ccs3ClientAppWindowsService.Messages.Device;
+using Ccs3ClientAppWindowsService.Messages.Device.Declarations;
 using Ccs3ClientAppWindowsService.Messages.LocalClient;
 using Ccs3ClientAppWindowsService.Messages.LocalClient.Declarations;
 using Microsoft.VisualBasic;
@@ -16,13 +18,13 @@ namespace Ccs3ClientAppWindowsService;
 public class Worker : BackgroundService {
     private readonly ILogger<Worker> _logger;
     private StartProcessAsCurrentUserResult? _startProcessAsCurrentUserResult;
-    private WebSocketConnector _wsConnector = new();
+    private WebSocketConnector _serverWsConnector = new();
     private readonly string _serviceName = "Ccs3ClientAppWindowsService";
     private readonly CertificateHelper _certificateHelper = new();
     private bool _disableClientAppProcessStartLogs = false;
     private JsonSerializerOptions _jsonSerializerOptions;
-    private Message<DeviceConfigurationNotificationMessageBody> _deviceConfigMsg;
-    private Message<DeviceSetStatusNotificationMessageBody> _deviceSetStatusMsg;
+    private ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> _deviceConfigNotificationMsg;
+    private ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> _deviceCurrentStatusNotificationMsg;
     private System.Threading.Timer _timer;
     private readonly WorkerState _state = new WorkerState();
     private readonly WebSocketServerManager _wsServerManager;
@@ -165,7 +167,7 @@ public class Worker : BackgroundService {
                         ExecuteIfDebugIsEnabled(() => {
                             _logger.LogDebug(new EventId(100), "Received message from local client: {0}", stringData);
                         });
-                        ProcessLocalClientWebSocketMessage(wsState, stringData);
+                        ProcessLocalClientConnectorReceivedData(wsState, stringData);
                     } else {
                         // TODO: Not entire message is received - collect the data and process only after the entire message is recevied
                         ExecuteIfDebugIsEnabled(() => {
@@ -193,8 +195,8 @@ public class Worker : BackgroundService {
         _state.WebSockets.TryRemove(webSocket, out _);
     }
 
-    private void ProcessLocalClientWebSocketMessage(ClientWebSocketState wsState, string stringData) {
-        LocalClientPartialMessage partialMsg = DeserializeLocalClientPartialMessage(stringData);
+    private void ProcessLocalClientConnectorReceivedData(ClientWebSocketState wsState, string stringData) {
+        PartialMessage partialMsg = DeserializePartialMessage(stringData);
         if (partialMsg?.Header?.Type == null) {
             // TODO: Can't process the message
             return;
@@ -203,41 +205,44 @@ public class Worker : BackgroundService {
         wsState.LastMessageReceivedAt = GetNow();
         string msgType = partialMsg.Header.Type;
         switch (msgType) {
-            case LocalClientRequestMessageType.Ping:
-                //var msg = DeserializeLocalClientRequestMessage<LocalClientPingRequestMessage, LocalClientPingRequestMessageBody>(stringData);
-                // We don't need to process the ping message - LastMessageReceivedAt was already set
-                break;
+            case LocalClientToDeviceRequestMessageType.Ping: {
+                    // We don't need to process the ping message - LastMessageReceivedAt was already set
+                    break;
+                }
+            case LocalClientToDeviceRequestMessageType.StartOnPrepaidTariff: {
+                    var msg = DeserializeLocalClientToDeviceRequestMessage<LocalClientToDeviceStartOnPrepaidTariffRequestMessage, LocalClientToDeviceStartOnPrepaidTariffRequestMessageBody>(stringData);
+                    var toServerRequestMsg = DeviceToServerStartOnPrepaidTariffRequestMessageHelper.CreateMessage();
+                    toServerRequestMsg.Body.TariffId = msg.Body.TariffId;
+                    toServerRequestMsg.Body.PasswordHash = msg.Body.PasswordHash; ;
+                    SendDeviceToServerRequestMessage(toServerRequestMsg, toServerRequestMsg.Header);
+                    break;
+                }
         }
     }
 
-    private TMessage DeserializeLocalClientRequestMessage<TMessage, TBody>(string jsonString) where TMessage : LocalClientRequestMessage<TBody>, new() {
-        var deserialized = JsonSerializer.Deserialize<LocalClientRequestMessage<object>>(jsonString, _jsonSerializerOptions);
+    private TMessage DeserializeLocalClientToDeviceRequestMessage<TMessage, TBody>(string jsonString) where TMessage : LocalClientToDeviceRequestMessage<TBody>, new() {
+        var deserialized = JsonSerializer.Deserialize<LocalClientToDeviceRequestMessage<object>>(jsonString, _jsonSerializerOptions);
         // TODO: Can we use reflection to infer the TBody ?
-        var deserializedMsg = CreateTypedLocalClientRequestMessageFromGenericMessage<TBody>(deserialized);
+        var deserializedMsg = CreateTypedLocalClientToDeviceRequestMessageFromGenericMessage<TBody>(deserialized);
         TMessage result = new TMessage();
         result.Header = deserializedMsg.Header;
         result.Body = deserializedMsg.Body;
         return result;
     }
 
-    private LocalClientRequestMessage<TBody> CreateTypedLocalClientRequestMessageFromGenericMessage<TBody>(LocalClientRequestMessage<object> msg) {
+    private LocalClientToDeviceRequestMessage<TBody> CreateTypedLocalClientToDeviceRequestMessageFromGenericMessage<TBody>(LocalClientToDeviceRequestMessage<object> msg) {
         string bodyString = msg.Body.ToString()!;
         TBody? body = DeserializeBody<TBody>(bodyString);
-        LocalClientRequestMessage<TBody> deserializedMsg = new LocalClientRequestMessage<TBody>();
+        LocalClientToDeviceRequestMessage<TBody> deserializedMsg = new LocalClientToDeviceRequestMessage<TBody>();
         deserializedMsg.Header = msg.Header;
         deserializedMsg.Body = body!;
         return deserializedMsg;
     }
 
-    private LocalClientPartialMessage DeserializeLocalClientPartialMessage(string jsonString) {
-        var deserialized = JsonSerializer.Deserialize<LocalClientPartialMessage>(jsonString, _jsonSerializerOptions);
-        return deserialized;
-    }
-
     private async void SendConfigurationNotificationMessage(WebSocket ws) {
-        LocalClientConfigurationNotificationMessage msg = LocalClientConfigurationNotificationMessageHelper.CreateMessage();
+        DeviceToLocalClientConfigurationNotificationMessage msg = DeviceToLocalClientConfigurationNotificationMessageHelper.CreateMessage();
         msg.Body.PingInterval = _state.LocalClientPingInterval;
-        await SendLocalClientNotificationMessage(msg, ws);
+        await SendDeviceToLocalClientNotificationMessage(msg, ws);
     }
 
     private void StartWebSocketConnector(CancellationToken cancellationToken) {
@@ -259,13 +264,13 @@ public class Worker : BackgroundService {
         }
         _logger.LogInformation("Using pc-connector certificate thumprint {0}", pcConnectorCertificateThumbprint);
 
-        _wsConnector.Connected += _wsConnector_Connected;
-        _wsConnector.Disconnected += _wsConnector_Disconnected;
-        _wsConnector.ConnectError += _wsConnector_ConnectError;
-        _wsConnector.ReceiveError += _wsConnector_ReceiveError;
-        _wsConnector.ValidatingRemoteCertificate += _wsConnector_ValidatingRemoteCertificate;
-        _wsConnector.DataReceived += _wsConnector_DataReceived;
-        _wsConnector.SendDataError += _wsConnector_SendDataError;
+        _serverWsConnector.Connected += _serverWsConnector_Connected;
+        _serverWsConnector.Disconnected += _serverWsConnector_Disconnected;
+        _serverWsConnector.ConnectError += _serverWsConnector_ConnectError;
+        _serverWsConnector.ReceiveError += _serverWsConnector_ReceiveError;
+        _serverWsConnector.ValidatingRemoteCertificate += _serverWsConnector_ValidatingRemoteCertificate;
+        _serverWsConnector.DataReceived += _serverWsConnector_DataReceived;
+        _serverWsConnector.SendDataError += _serverWsConnector_SendDataError;
         WebSocketConnectorConfig wsConnectorConfig = new() {
             ClientCertificate = clientCert,
             CancellationToken = cancellationToken,
@@ -276,27 +281,27 @@ public class Worker : BackgroundService {
 #if DEBUG
         //wsConnectorConfig.TrustAllServerCertificates = true;
 #endif
-        _wsConnector.Initialize(wsConnectorConfig);
-        _wsConnector.Start();
+        _serverWsConnector.Initialize(wsConnectorConfig);
+        _serverWsConnector.Start();
     }
 
-    private void _wsConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
+    private void _serverWsConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
         _logger.LogInformation("Disconnected from the server");
     }
 
-    private void _wsConnector_ReceiveError(object? sender, ReceiveErrorEventArgs e) {
+    private void _serverWsConnector_ReceiveError(object? sender, ReceiveErrorEventArgs e) {
         _logger.LogWarning(e.Exception, "Server data receive error");
     }
 
-    private void _wsConnector_Connected(object? sender, ConnectedEventArgs e) {
+    private void _serverWsConnector_Connected(object? sender, ConnectedEventArgs e) {
         _logger.LogInformation("Connected to the server");
     }
 
-    private void _wsConnector_SendDataError(object? sender, SendDataErrorEventArgs e) {
+    private void _serverWsConnector_SendDataError(object? sender, SendDataErrorEventArgs e) {
         _logger.LogWarning(e.Exception, "WebSocket send data error");
     }
 
-    private void _wsConnector_DataReceived(object? sender, DataReceivedEventArgs e) {
+    private void _serverWsConnector_DataReceived(object? sender, DataReceivedEventArgs e) {
         bool traceEnabled = _logger.IsEnabled(LogLevel.Trace);
         if (traceEnabled) {
             ExecuteIfDebugIsEnabled(() => {
@@ -312,7 +317,7 @@ public class Worker : BackgroundService {
                 _logger.LogDebug("Received string '{0}'", stringData);
             }
             try {
-                ProcessWebSocketConnectorReceivedData(stringData);
+                ProcessServerConnectorReceivedData(stringData);
             } catch (Exception ex) {
                 _logger.LogError(ex, "Can't process received data '{0}'", stringData);
             }
@@ -321,36 +326,44 @@ public class Worker : BackgroundService {
         }
     }
 
-    private void ProcessWebSocketConnectorReceivedData(string stringData) {
-        Message<object> msg = DeserializeMessage<object>(stringData);
+    private void ProcessServerConnectorReceivedData(string stringData) {
+        PartialMessage msg = DeserializePartialMessage(stringData);
         string msgType = msg.Header.Type;
         switch (msgType) {
-            case MessageType.DeviceConfiguration:
-                Message<DeviceConfigurationNotificationMessageBody> deviceConfigurationMsg = CreateTypedMessageFromGenericMessage<DeviceConfigurationNotificationMessageBody>(msg);
+            case ServerToDeviceNotificationMessageType.DeviceConfiguration:
+                ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> deviceConfigurationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody>(msg);
                 ProcessDeviceConfigurationNotificationMessage(deviceConfigurationMsg);
                 break;
-            case MessageType.DeviceSetStatus:
-                Message<DeviceSetStatusNotificationMessageBody> deviceSetStatusNotificationMsg = CreateTypedMessageFromGenericMessage<DeviceSetStatusNotificationMessageBody>(msg);
-                ProcessDeviceSetStatusNotificationMessage(deviceSetStatusNotificationMsg);
+            case ServerToDeviceNotificationMessageType.CurrentStatus:
+                ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> deviceSetStatusNotificationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody>(msg);
+                ProcessServerToDeviceCurrentStatusNotificationMessage(deviceSetStatusNotificationMsg);
+                break;
+            case ServerToDeviceReplyMessageType.StartOnPrepaidTariff:
+                // TODO: For now we will process this here
+                ServerToDeviceReplyMessage<ServerToDeviceStartOnPrepaidTariffReplyMessageBody> startOnPrepaidTariffReplyMsg = CreateTypedMessageFromGenericServerToDeviceReplyMessage<ServerToDeviceStartOnPrepaidTariffReplyMessageBody>(msg);
+                ProcessServerToDeviceStartOnPrepaidTariffReplyMessage(startOnPrepaidTariffReplyMsg);
                 break;
         }
         //JsonSerializer.Deserialize<object>(deserialized.Body as JsonElement);
         //const bodyJsonElement = deserialized.Body as JsonElement;
     }
 
-    private void ProcessDeviceConfigurationNotificationMessage(Message<DeviceConfigurationNotificationMessageBody> msg) {
-        _deviceConfigMsg = msg;
+    private void ProcessServerToDeviceStartOnPrepaidTariffReplyMessage(ServerToDeviceReplyMessage<ServerToDeviceStartOnPrepaidTariffReplyMessageBody> msg) {
+        // TODO: Send reply to the client
     }
 
-    private void ProcessDeviceSetStatusNotificationMessage(Message<DeviceSetStatusNotificationMessageBody> msg) {
-        _deviceSetStatusMsg = msg;
-        // TODO: send to local clients the new status
-        var msgToSend = LocalClientStatusNotificationMessageHelper.CreateMessage();
-        msgToSend.Body = new LocalClientStatusNotificationMessageBody {
+    private void ProcessDeviceConfigurationNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> msg) {
+        _deviceConfigNotificationMsg = msg;
+    }
+
+    private void ProcessServerToDeviceCurrentStatusNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> msg) {
+        _deviceCurrentStatusNotificationMsg = msg;
+        var msgToSend = DeviceToLocalClientCurrentStatusNotificationMessageHelper.CreateMessage();
+        msgToSend.Body = new DeviceToLocalClientCurrentStatusNotificationMessageBody {
             Started = msg.Body.Started,
             Amounts = msg.Body.Amounts,
         };
-        string serialized = SerializeLocalClientNotificationMessage(msgToSend);
+        string serialized = SerializeDeviceToLocalClientNotificationMessage(msgToSend);
         SendToAllLocalClients(serialized);
     }
 
@@ -373,17 +386,42 @@ public class Worker : BackgroundService {
         }
     }
 
-    private Message<TBody> CreateTypedMessageFromGenericMessage<TBody>(Message<object> msg) {
+    private ServerToDeviceNotificationMessage<TBody> CreateTypedMessageFromGenericServerToDeviceNotificationMessage<TBody>(PartialMessage msg) {
         string bodyString = msg.Body.ToString()!;
         TBody? body = DeserializeBody<TBody>(bodyString);
-        Message<TBody> deserializedMsg = new Message<TBody>();
-        deserializedMsg.Header = msg.Header;
+        ServerToDeviceNotificationMessage<TBody> deserializedMsg = new ServerToDeviceNotificationMessage<TBody>();
+        deserializedMsg.Header = new ServerToDeviceNotificationMessageHeader {
+            Type = msg.Header.Type,
+        };
         deserializedMsg.Body = body!;
         return deserializedMsg;
     }
 
-    private Message<TBody> DeserializeMessage<TBody>(string jsonString) {
-        var deserialized = JsonSerializer.Deserialize<Message<TBody>>(jsonString, _jsonSerializerOptions);
+    private ServerToDeviceReplyMessage<TBody> CreateTypedMessageFromGenericServerToDeviceReplyMessage<TBody>(PartialMessage msg) {
+        string bodyString = msg.Body.ToString()!;
+        TBody? body = DeserializeBody<TBody>(bodyString);
+        ServerToDeviceReplyMessage<TBody> deserializedMsg = new ServerToDeviceReplyMessage<TBody>();
+        deserializedMsg.Header = new ServerToDeviceReplyMessageHeader {
+            Type = msg.Header.Type,
+            CorrelationId = msg.Header.CorrelationId,
+            MessageErrors = msg.Header.MessageErrors,
+            Failure = msg.Header.Failure,
+        };
+        deserializedMsg.Body = body!;
+        return deserializedMsg;
+    }
+
+    //private Message<TBody> CreateTypedMessageFromGenericMessage<TBody>(Message<object> msg) {
+    //    string bodyString = msg.Body.ToString()!;
+    //    TBody? body = DeserializeBody<TBody>(bodyString);
+    //    Message<TBody> deserializedMsg = new Message<TBody>();
+    //    deserializedMsg.Header = msg.Header;
+    //    deserializedMsg.Body = body!;
+    //    return deserializedMsg;
+    //}
+
+    private PartialMessage DeserializePartialMessage(string jsonString) {
+        var deserialized = JsonSerializer.Deserialize<PartialMessage>(jsonString, _jsonSerializerOptions);
         return deserialized;
     }
 
@@ -392,17 +430,17 @@ public class Worker : BackgroundService {
         return deserialized;
     }
 
-    private string SerializeMessage<TBody>(Message<TBody> msg) {
+    private string SerializeMessage(object msg) {
         var serializedString = JsonSerializer.Serialize(msg, _jsonSerializerOptions);
         return serializedString;
     }
 
-    private string SerializeLocalClientNotificationMessage<TBody>(LocalClientNotificationMessage<TBody> msg) {
+    private string SerializeDeviceToLocalClientNotificationMessage<TBody>(DeviceToLocalClientNotificationMessage<TBody> msg) {
         var serializedString = JsonSerializer.Serialize(msg, _jsonSerializerOptions);
         return serializedString;
     }
 
-    private void _wsConnector_ValidatingRemoteCertificate(object? sender, ValidatingRemoteCertificateArgs e) {
+    private void _serverWsConnector_ValidatingRemoteCertificate(object? sender, ValidatingRemoteCertificateArgs e) {
         _logger.LogInformation(
             "Validating remote server certificate{0}{1}{2}",
             Environment.NewLine,
@@ -412,7 +450,7 @@ public class Worker : BackgroundService {
         );
     }
 
-    private void _wsConnector_ConnectError(object? sender, ConnectErrorEventArgs e) {
+    private void _serverWsConnector_ConnectError(object? sender, ConnectErrorEventArgs e) {
         _logger.LogWarning(e.Exception, "WebSocket connect error");
     }
 
@@ -446,7 +484,7 @@ public class Worker : BackgroundService {
         if (_state.CancellationToken.IsCancellationRequested) {
             return;
         }
-        if (_deviceConfigMsg == null) {
+        if (_deviceConfigNotificationMsg == null) {
             // Still did not received initial messages from server - probably this device 
             // is not part of the system / not active / no connection to the server
             return;
@@ -539,45 +577,52 @@ public class Worker : BackgroundService {
         if (_state.CancellationToken.IsCancellationRequested) {
             return;
         }
-        if (_deviceConfigMsg is null) {
+        if (_deviceConfigNotificationMsg is null) {
             return;
         }
-        if (_deviceConfigMsg.Body is null
-            || _deviceConfigMsg.Body.PingInterval <= 0) {
+        if (_deviceConfigNotificationMsg.Body is null
+            || _deviceConfigNotificationMsg.Body.PingInterval <= 0) {
             ExecuteIfDebugIsEnabled(() => {
-                _logger.LogDebug("Can't ping server. Device configuration ping interval {0} is invalid", _deviceConfigMsg.Body?.PingInterval);
+                _logger.LogDebug("Can't ping server. Device configuration ping interval {0} is invalid", _deviceConfigNotificationMsg.Body?.PingInterval);
             });
             return;
         }
 
         try {
             TimeSpan diff = GetNow() - _state.LastServicePingDateTime;
-            if (diff.TotalMilliseconds >= _deviceConfigMsg.Body.PingInterval) {
+            if (diff.TotalMilliseconds >= _deviceConfigNotificationMsg.Body.PingInterval) {
                 _state.LastServicePingDateTime = DateTime.UtcNow;
-                SendPingMessage();
+                SendDeviceToServerPingNotificationMessage();
             }
         } catch (Exception ex) {
             _logger.LogError(ex, "Can't ping the server");
         }
     }
 
-    private void SendPingMessage() {
-        Message<PingMessageBody> pingMsg = new() {
-            Header = new MessageHeader { Type = MessageType.Ping },
-            Body = new PingMessageBody(),
-        };
-        SendMessage(pingMsg);
+    private void SendDeviceToServerPingNotificationMessage() {
+        DeviceToServerPingNotificationMessage pingMsg = DeviceToServerPingNotificationMessageHelper.CreateMessage();
+        SendDeviceToServerNotificationMessage(pingMsg);
     }
 
-    private void SendMessage<TBody>(Message<TBody> msg) {
+    private void SendDeviceToServerNotificationMessage(object msg) {
         string serialized = SerializeMessage(msg);
         ReadOnlyMemory<byte> buffer = new(Encoding.UTF8.GetBytes(serialized));
         _state.LastDataSentAt = GetNow();
-        _wsConnector.SendData(buffer);
+        _serverWsConnector.SendData(buffer);
     }
 
-    private async Task<bool> SendLocalClientNotificationMessage<TBody>(LocalClientNotificationMessage<TBody> msg, WebSocket ws) {
-        string serialized = SerializeLocalClientNotificationMessage(msg);
+    private void SendDeviceToServerRequestMessage(object msg, DeviceToServerRequestMessageHeader messageHeader) {
+        if (string.IsNullOrWhiteSpace(messageHeader.CorrelationId)) {
+            messageHeader.CorrelationId = Guid.NewGuid().ToString();
+        }
+        string serialized = SerializeMessage(msg);
+        ReadOnlyMemory<byte> buffer = new(Encoding.UTF8.GetBytes(serialized));
+        _state.LastDataSentAt = GetNow();
+        _serverWsConnector.SendData(buffer);
+    }
+
+    private async Task<bool> SendDeviceToLocalClientNotificationMessage<TBody>(DeviceToLocalClientNotificationMessage<TBody> msg, WebSocket ws) {
+        string serialized = SerializeDeviceToLocalClientNotificationMessage(msg);
         ReadOnlyMemory<byte> bytes = new(Encoding.UTF8.GetBytes(serialized));
         _state.LastLocalClientDataSentAt = GetNow();
         try {
