@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
@@ -658,6 +659,10 @@ public class Worker : BackgroundService {
             if (diff.TotalSeconds > _deviceConfigNotificationMsg.Body.SecondAfterStoppedBeforeRestart.Value) {
                 _state.Restarting = true;
                 _restartWindowsHelper.Restart();
+                int lastWin32Error = Marshal.GetLastWin32Error();
+                if (lastWin32Error != 0) {
+                    _logger.LogWarning("Can't restart. LastWin32Error: " + lastWin32Error);
+                }
             }
         }
     }
