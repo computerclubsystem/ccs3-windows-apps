@@ -13,7 +13,7 @@
 	<WebPublishMethod>FileSystem</WebPublishMethod>
 	<PublishProvider>FileSystem</PublishProvider>
     <ImplicitUsings>enable</ImplicitUsings>
-	<AssemblyVersion>3.0.0.24</AssemblyVersion>
+	<AssemblyVersion>3.0.0.25</AssemblyVersion>
 	<RepositoryUrl>https://github.com/computerclubsystem/ccs3-windows-apps</RepositoryUrl>
   </PropertyGroup>
 

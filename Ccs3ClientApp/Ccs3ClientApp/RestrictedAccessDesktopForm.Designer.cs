@@ -151,7 +151,7 @@
             // lblSecondsBeforeRestart
             // 
             lblSecondsBeforeRestart.AutoSize = true;
-            lblSecondsBeforeRestart.ForeColor = SystemColors.ButtonFace;
+            lblSecondsBeforeRestart.ForeColor = Color.Orange;
             lblSecondsBeforeRestart.Location = new Point(15, 260);
             lblSecondsBeforeRestart.Name = "lblSecondsBeforeRestart";
             lblSecondsBeforeRestart.Size = new Size(111, 18);
