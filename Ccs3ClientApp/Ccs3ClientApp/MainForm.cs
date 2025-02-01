@@ -218,6 +218,11 @@ namespace Ccs3ClientApp {
             }
             string msgType = partialMsg.Header.Type;
             switch (msgType) {
+                case DeviceToLocalClientNotificationMessageType.SecondsBeforeRestart: {
+                        var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientSecondsBeforeRestartNotificationMessage, DeviceToLocalClientSecondsBeforeRestartNotificationMessageBody>(stringData);
+                        ProcessDeviceToLocalClientSecondsBeforeRestartNotificationMessage(msg);
+                        break;
+                    }
                 case DeviceToLocalClientReplyMessageType.ChangePrepaidTariffPasswordByCustomer: {
                         var msg = DeserializeDeviceToLocalClientReplyMessage<DeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessage, DeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessageBody>(stringData);
                         ProcessDeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessage(msg);
@@ -335,6 +340,10 @@ namespace Ccs3ClientApp {
             destination.Type = source.Type;
         }
 
+        private void ProcessDeviceToLocalClientSecondsBeforeRestartNotificationMessage(DeviceToLocalClientSecondsBeforeRestartNotificationMessage msg) {
+            _state.RestrictedAccessDesktopForm.SetSecondsBeforeRestart(msg.Body.Seconds);
+        }
+
         private void ProcessDeviceToLocalClientCurrentStatusNotificationMessage(DeviceToLocalClientCurrentStatusNotificationMessage msg) {
             _state.CurrentStatusNotificationMessage = msg;
             ProcessCurrentStatus();
@@ -426,6 +435,9 @@ namespace Ccs3ClientApp {
                 return;
             }
             bool started = _state.CurrentStatusNotificationMessage.Body.Started;
+            if (started) {
+                _state.RestrictedAccessDesktopForm.SetSecondsBeforeRestart(0);
+            }
             bool shouldSwitchToSecuredDesktop = !started;
 #if !DEBUG
             SwitchToDesktop(shouldSwitchToSecuredDesktop);

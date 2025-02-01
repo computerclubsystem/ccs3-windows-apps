@@ -24,13 +24,19 @@ namespace Ccs3ClientApp {
             _canClose = canClose;
         }
 
+        public void SetSecondsBeforeRestart(int seconds) {
+            SafeChangeUI(() => {
+                if (seconds <= 0) {
+                    lblSecondsBeforeRestart.Visible = false;
+                    return;
+                }
+                lblSecondsBeforeRestart.Visible = true;
+                lblSecondsBeforeRestart.Text = "Restaring in " + seconds.ToString() + " seconds";
+            });
+        }
+
         public void SetCustomerSignInResult(bool passwordDoesNotMatch, bool notAllowed, bool alreadyInUse, bool success) {
-            var action = () => SetSignInResult(passwordDoesNotMatch, notAllowed, alreadyInUse, success);
-            if (InvokeRequired) {
-                this.Invoke(action);
-            } else {
-                action();
-            }
+            SafeChangeUI(() => SetSignInResult(passwordDoesNotMatch, notAllowed, alreadyInUse, success));
         }
 
         private void SetSignInResult(bool passwordDoesNotMatch, bool notAllowed, bool alreadyInUse, bool success) {
@@ -86,6 +92,14 @@ namespace Ccs3ClientApp {
 
         private void chkToggleCustomerCardSignIn_CheckedChanged(object sender, EventArgs e) {
             gbCustomerSignIn.Visible = chkToggleCustomerCardSignIn.Checked;
+        }
+
+        private void SafeChangeUI(Action action) {
+            if (InvokeRequired) {
+                Invoke(action);
+            } else {
+                action();
+            }
         }
     }
 

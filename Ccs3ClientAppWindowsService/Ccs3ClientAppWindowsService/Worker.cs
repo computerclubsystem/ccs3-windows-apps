@@ -647,16 +647,20 @@ public class Worker : BackgroundService {
 
     private void CheckForRestartAfterStopped() {
         if (_state.Restarting) {
+            SendSecondsToRestartMessage(0);
             return;
         }
         if (_state.StartedState == false
             && _deviceConfigNotificationMsg != null
             && _state.StartedToStoppedTransitionDate != null
-            && _deviceConfigNotificationMsg.Body.SecondAfterStoppedBeforeRestart != null
-            && _deviceConfigNotificationMsg.Body.SecondAfterStoppedBeforeRestart > 0) {
+            && _deviceConfigNotificationMsg.Body.SecondsAfterStoppedBeforeRestart != null
+            && _deviceConfigNotificationMsg.Body.SecondsAfterStoppedBeforeRestart > 0) {
             var now = DateTimeOffset.Now;
             var diff = now - _state.StartedToStoppedTransitionDate.Value;
-            if (diff.TotalSeconds > _deviceConfigNotificationMsg.Body.SecondAfterStoppedBeforeRestart.Value) {
+            var secondsConfigValue = _deviceConfigNotificationMsg.Body.SecondsAfterStoppedBeforeRestart.Value;
+            int remainingSeconds = secondsConfigValue - (int)diff.TotalSeconds;
+            SendSecondsToRestartMessage(remainingSeconds);
+            if (diff.TotalSeconds > secondsConfigValue) {
                 _state.Restarting = true;
                 _restartWindowsHelper.Restart();
                 int lastWin32Error = Marshal.GetLastWin32Error();
@@ -665,6 +669,13 @@ public class Worker : BackgroundService {
                 }
             }
         }
+    }
+
+    private void SendSecondsToRestartMessage(int remainingSeconds) {
+        var notificationMsg = DeviceToLocalClientSecondsBeforeRestartNotificationMessageHelper.CreateMessage();
+        notificationMsg.Body.Seconds = remainingSeconds;
+        var serialized = SerializeDeviceToLocalClientNotificationMessage(notificationMsg);
+        SendToAllLocalClients(serialized);
     }
 
     private void PingServer() {
