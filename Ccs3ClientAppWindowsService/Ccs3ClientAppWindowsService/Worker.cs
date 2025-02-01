@@ -25,6 +25,7 @@ public class Worker : BackgroundService {
     private readonly string _serviceName = "Ccs3ClientAppWindowsService";
     private readonly CertificateHelper _certificateHelper = new();
     private readonly RegistryHelper _registryHelper = new();
+    private readonly RestartWindowsHelper _restartWindowsHelper = new();
     private bool _disableClientAppProcessStartLogs = false;
     private JsonSerializerOptions _jsonSerializerOptions;
     private ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> _deviceConfigNotificationMsg;
@@ -60,7 +61,7 @@ public class Worker : BackgroundService {
             _logger.LogDebug(new EventId(101), "stoppingToken canceled");
         });
         if (_logger.IsEnabled(LogLevel.Information)) {
-            _logger.LogInformation("Worker running at: {time}", GetNow());
+            _logger.LogInformation("CCS3 worker started at: {time}", GetNow());
         }
         _jsonSerializerOptions = CreateJsonSerializerOptions();
         _disableClientAppProcessStartLogs = Environment.GetEnvironmentVariable(Ccs3EnvironmentVariableNames.CCS3_CAWS_DEBUG_DISABLE_CLIENT_APP_PROCESS_START_LOGS) == "true";
@@ -288,9 +289,6 @@ public class Worker : BackgroundService {
             ServerUri = pcConnectorBaseUri,
             ServerCertificateThumbprint = pcConnectorCertificateThumbprint,
         };
-#if DEBUG
-        //wsConnectorConfig.TrustAllServerCertificates = true;
-#endif
         _serverWsConnector.Initialize(wsConnectorConfig);
         _serverWsConnector.Start();
     }
@@ -532,6 +530,9 @@ public class Worker : BackgroundService {
     }
 
     private void StartClientAppIfNotStarted() {
+#if DEBUG
+        return;
+#endif
         // TODO: What if the process already runs ? Should we store its id and use it later when we want to kill it ?
         //       And what about multiple instances of the process ?
         if (_state.CancellationToken.IsCancellationRequested) {
@@ -542,10 +543,6 @@ public class Worker : BackgroundService {
             // is not part of the system / not active / no connection to the server
             return;
         }
-        // TODO: For testing only
-        //#if DEBUG
-        //        return;
-        //#endif
         if (_startProcessAsCurrentUserResult != null && _startProcessAsCurrentUserResult.Success) {
             // The proces seems started
             return;
@@ -624,6 +621,25 @@ public class Worker : BackgroundService {
 
     private void TimerCallbackFunction(object? state) {
         PingServer();
+        CheckForRestartAfterStopped();
+    }
+
+    private void CheckForRestartAfterStopped() {
+        if (_state.Restarting) {
+            return;
+        }
+        if (_state.StartedState == false
+            && _deviceConfigNotificationMsg != null
+            && _state.StartedToStoppedTransitionDate != null
+            && _deviceConfigNotificationMsg.Body.SecondAfterStoppedBeforeRestart != null
+            && _deviceConfigNotificationMsg.Body.SecondAfterStoppedBeforeRestart > 0) {
+            var now = DateTimeOffset.Now;
+            var diff = now - _state.StartedToStoppedTransitionDate.Value;
+            if (diff.TotalSeconds > _deviceConfigNotificationMsg.Body.SecondAfterStoppedBeforeRestart.Value) {
+                _state.Restarting = true;
+                _restartWindowsHelper.Restart();
+            }
+        }
     }
 
     private void PingServer() {
@@ -741,8 +757,6 @@ public class Worker : BackgroundService {
         _state.LastServicePingDateTime = GetNow();
         _state.LocalClientPingInterval = 5000;
         _state.WebSockets = new ConcurrentDictionary<WebSocket, ClientWebSocketState>();
-        // Always start in started state
-        _state.StartedState = true;
     }
 
     private void LogClientAppProcessData(Action logAction) {
@@ -828,7 +842,8 @@ public class Worker : BackgroundService {
         public CancellationToken AppCancellationToken { get; set; }
         public int LocalClientPingInterval { get; set; }
         public ConcurrentDictionary<WebSocket, ClientWebSocketState> WebSockets { get; set; }
-        public bool StartedState { get; set; }
+        public bool? StartedState { get; set; }
         public DateTimeOffset? StartedToStoppedTransitionDate { get; set; }
+        public bool Restarting { get; set; }
     }
 }
