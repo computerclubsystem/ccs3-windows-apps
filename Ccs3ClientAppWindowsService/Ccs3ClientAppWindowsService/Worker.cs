@@ -228,6 +228,14 @@ public class Worker : BackgroundService {
                     SendDeviceToServerRequestMessage(toServerReqMsg, toServerReqMsg.Header);
                     break;
                 }
+            case LocalClientToDeviceRequestMessageType.ChangePrepaidTariffPasswordByCustomer: {
+                    var msg = DeserializeLocalClientToDeviceRequestMessage<LocalClientToDeviceChangePrepaidTariffPasswordByCustomerRequestMessage, LocalClientToDeviceChangePrepaidTariffPasswordByCustomerRequestMessageBody>(stringData);
+                    var toServerReqMsg = DeviceToServerChangePrepaidTariffPasswordByCustomerRequestMessageHelper.CreateMessage();
+                    toServerReqMsg.Body.CurrentPasswordHash = msg.Body.CurrentPasswordHash;
+                    toServerReqMsg.Body.NewPasswordHash = msg.Body.NewPasswordHash;
+                    SendDeviceToServerRequestMessage(toServerReqMsg, toServerReqMsg.Header);
+                    break;
+                }
         }
     }
 
@@ -338,26 +346,38 @@ public class Worker : BackgroundService {
         PartialMessage msg = DeserializePartialMessage(stringData);
         string msgType = msg.Header.Type;
         switch (msgType) {
-            case ServerToDeviceNotificationMessageType.DeviceConfiguration:
-                ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> deviceConfigurationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody>(msg);
-                ProcessDeviceConfigurationNotificationMessage(deviceConfigurationMsg);
-                break;
-            case ServerToDeviceNotificationMessageType.CurrentStatus:
-                ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> deviceSetStatusNotificationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody>(msg);
-                ProcessServerToDeviceCurrentStatusNotificationMessage(deviceSetStatusNotificationMsg);
+            case ServerToDeviceReplyMessageType.ChangePrepaidTariffPasswordByCustomer:
+                // TODO: For now we will process this here
+                ServerToDeviceReplyMessage<ServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessageBody> changePrepaidTariffPasswordByCustomerReplyMsg = CreateTypedMessageFromGenericServerToDeviceReplyMessage<ServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessageBody>(msg);
+                ProcessServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessage(changePrepaidTariffPasswordByCustomerReplyMsg);
                 break;
             case ServerToDeviceReplyMessageType.StartOnPrepaidTariff:
                 // TODO: For now we will process this here
                 ServerToDeviceReplyMessage<ServerToDeviceStartOnPrepaidTariffReplyMessageBody> startOnPrepaidTariffReplyMsg = CreateTypedMessageFromGenericServerToDeviceReplyMessage<ServerToDeviceStartOnPrepaidTariffReplyMessageBody>(msg);
                 ProcessServerToDeviceStartOnPrepaidTariffReplyMessage(startOnPrepaidTariffReplyMsg);
                 break;
+            case ServerToDeviceNotificationMessageType.CurrentStatus:
+                ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> deviceSetStatusNotificationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody>(msg);
+                ProcessServerToDeviceCurrentStatusNotificationMessage(deviceSetStatusNotificationMsg);
+                break;
+            case ServerToDeviceNotificationMessageType.DeviceConfiguration:
+                ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> deviceConfigurationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody>(msg);
+                ProcessDeviceConfigurationNotificationMessage(deviceConfigurationMsg);
+                break;
+
         }
         //JsonSerializer.Deserialize<object>(deserialized.Body as JsonElement);
         //const bodyJsonElement = deserialized.Body as JsonElement;
     }
 
+    private void ProcessServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessage(ServerToDeviceReplyMessage<ServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessageBody> msg) {
+        var dtlcMsg = DeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessageHelper.CreateMessage();
+        TransferReplyHeader(msg.Header, dtlcMsg.Header);
+        var serialized = SerializeDeviceToLocalClientReplyMessage(dtlcMsg);
+        SendToAllLocalClients(serialized);
+    }
+
     private void ProcessServerToDeviceStartOnPrepaidTariffReplyMessage(ServerToDeviceReplyMessage<ServerToDeviceStartOnPrepaidTariffReplyMessageBody> msg) {
-        // TODO: Send reply to the client
         var dtlcMsg = DeviceToLocalClientStartOnPrepaidTariffReplyMessageHelper.CreateMessage();
         TransferReplyHeader(msg.Header, dtlcMsg.Header);
         dtlcMsg.Body.Success = msg.Body.Success;

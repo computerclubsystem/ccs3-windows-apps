@@ -162,7 +162,7 @@ namespace Ccs3ClientApp {
                 //ub.Query = query.ToString();
                 //localServiceUri = ub.Uri;
                 _state.LocalServiceUri = localServiceUri;
-                _state.LocalServiceConnector = new WebSocketConnector();
+                _state.DeviceConnector = new WebSocketConnector();
                 WebSocketConnectorConfig connectorCfg = new() {
                     CancellationToken = _state.CancellationToken,
                     // TODO: For now we will not use ClientApp certificate
@@ -173,35 +173,35 @@ namespace Ccs3ClientApp {
                     ReconnectDelay = TimeSpan.FromSeconds(3),
                     ServerUri = localServiceUri,
                 };
-                _state.LocalServiceConnector.Initialize(connectorCfg);
-                _state.LocalServiceConnector.Connected += LocalServiceConnector_Connected;
-                _state.LocalServiceConnector.ConnectError += LocalServiceConnector_ConnectError;
-                _state.LocalServiceConnector.Disconnected += LocalServiceConnector_Disconnected;
-                _state.LocalServiceConnector.ValidatingRemoteCertificate += LocalServiceConnector_ValidatingRemoteCertificate;
-                _state.LocalServiceConnector.DataReceived += LocalServiceConnector_DataReceived;
-                _state.LocalServiceConnector.ReceiveError += LocalServiceConnector_ReceiveError;
-                _state.LocalServiceConnector.SendDataError += LocalServiceConnector_SendDataError;
-                _state.LocalServiceConnector.Start();
+                _state.DeviceConnector.Initialize(connectorCfg);
+                _state.DeviceConnector.Connected += DeviceConnector_Connected;
+                _state.DeviceConnector.ConnectError += DeviceConnector_ConnectError;
+                _state.DeviceConnector.Disconnected += DeviceConnector_Disconnected;
+                _state.DeviceConnector.ValidatingRemoteCertificate += DeviceConnector_ValidatingRemoteCertificate;
+                _state.DeviceConnector.DataReceived += DeviceConnector_DataReceived;
+                _state.DeviceConnector.ReceiveError += DeviceConnector_ReceiveError;
+                _state.DeviceConnector.SendDataError += DeviceConnector_SendDataError;
+                _state.DeviceConnector.Start();
             } else {
                 // TODO: Cannot parse local service Uri string
             }
             CreateRestrictedDesktop();
         }
 
-        private void LocalServiceConnector_SendDataError(object? sender, SendDataErrorEventArgs e) {
+        private void DeviceConnector_SendDataError(object? sender, SendDataErrorEventArgs e) {
         }
 
-        private void LocalServiceConnector_ReceiveError(object? sender, ReceiveErrorEventArgs e) {
+        private void DeviceConnector_ReceiveError(object? sender, ReceiveErrorEventArgs e) {
         }
 
-        private void LocalServiceConnector_DataReceived(object? sender, DataReceivedEventArgs e) {
+        private void DeviceConnector_DataReceived(object? sender, DataReceivedEventArgs e) {
             if (e.Data.Length == 0) {
                 return;
             }
             try {
                 string stringData = Encoding.UTF8.GetString(e.Data.ToArray());
                 try {
-                    ProcessServiceConnectorReceivedMessage(stringData);
+                    ProcessDeviceConnectorReceivedMessage(stringData);
                 } catch (Exception ex) {
 
                 }
@@ -210,7 +210,7 @@ namespace Ccs3ClientApp {
             }
         }
 
-        private void ProcessServiceConnectorReceivedMessage(string stringData) {
+        private void ProcessDeviceConnectorReceivedMessage(string stringData) {
             PartialMessage partialMsg = DeserializePartialMessage(stringData);
             if (partialMsg?.Header?.Type == null) {
                 // TODO: Can't process the message
@@ -218,9 +218,14 @@ namespace Ccs3ClientApp {
             }
             string msgType = partialMsg.Header.Type;
             switch (msgType) {
-                case DeviceToLocalClientNotificationMessageType.Configuration: {
-                        var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientConfigurationNotificationMessage, DeviceToLocalClientConfigurationNotificationMessageBody>(stringData);
-                        ProcessDeviceToLocalClientConfigurationNotificationMessage(msg);
+                case DeviceToLocalClientReplyMessageType.ChangePrepaidTariffPasswordByCustomer: {
+                        var msg = DeserializeDeviceToLocalClientReplyMessage<DeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessage, DeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessageBody>(stringData);
+                        ProcessDeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessage(msg);
+                        break;
+                    }
+                case DeviceToLocalClientReplyMessageType.StartOnPrepaidTariff: {
+                        var msg = DeserializeDeviceToLocalClientReplyMessage<DeviceToLocalClientStartOnPrepaidTariffReplyMessage, DeviceToLocalClientStartOnPrepaidTariffReplyMessageBody>(stringData);
+                        ProcessDeviceToLocalClientStartOnPrepaidTariffReplyMessage(msg);
                         break;
                     }
                 case DeviceToLocalClientNotificationMessageType.CurrentStatus: {
@@ -228,9 +233,9 @@ namespace Ccs3ClientApp {
                         ProcessDeviceToLocalClientCurrentStatusNotificationMessage(msg);
                         break;
                     }
-                case DeviceToLocalClientReplyMessageType.StartOnPrepaidTariff: {
-                        var msg = DeserializeDeviceToLocalClientReplyMessage<DeviceToLocalClientStartOnPrepaidTariffReplyMessage, DeviceToLocalClientStartOnPrepaidTariffReplyMessageBody>(stringData);
-                        ProcessDeviceToLocalClientStartOnPrepaidTariffReplyMessage(msg);
+                case DeviceToLocalClientNotificationMessageType.Configuration: {
+                        var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientConfigurationNotificationMessage, DeviceToLocalClientConfigurationNotificationMessageBody>(stringData);
+                        ProcessDeviceToLocalClientConfigurationNotificationMessage(msg);
                         break;
                     }
             }
@@ -262,6 +267,14 @@ namespace Ccs3ClientApp {
             //        // TODO: Unknown message type
             //        break;
             //}
+        }
+
+        private void ProcessDeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessage(DeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessage msg) {
+            if (msg.Header.Failure.HasValue && msg.Header.Failure.Value == true) {
+                MessageBox.Show("Failed to change the password. Check if current password is correct", "Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            } else {
+                MessageBox.Show("Password has been changed.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         private void ProcessDeviceToLocalClientStartOnPrepaidTariffReplyMessage(DeviceToLocalClientStartOnPrepaidTariffReplyMessage msg) {
@@ -309,11 +322,17 @@ namespace Ccs3ClientApp {
             string bodyString = msg.Body.ToString()!;
             TBody? body = DeserializeBody<TBody>(bodyString);
             DeviceToLocalClientReplyMessage<TBody> deserializedMsg = new DeviceToLocalClientReplyMessage<TBody>();
-            deserializedMsg.Header = new DeviceToLocalClientReplyMessageHeader {
-                Type = msg.Header.Type,
-            };
+            deserializedMsg.Header = new DeviceToLocalClientReplyMessageHeader();
+            TransferReplyHeader(msg.Header, deserializedMsg.Header);
             deserializedMsg.Body = body!;
             return deserializedMsg;
+        }
+
+        private void TransferReplyHeader(ReplyMessageHeader source, ReplyMessageHeader destination) {
+            destination.CorrelationId = source.CorrelationId;
+            destination.MessageErrors = source.MessageErrors;
+            destination.Failure = source.Failure;
+            destination.Type = source.Type;
         }
 
         private void ProcessDeviceToLocalClientCurrentStatusNotificationMessage(DeviceToLocalClientCurrentStatusNotificationMessage msg) {
@@ -386,16 +405,16 @@ namespace Ccs3ClientApp {
             return serializedByteArray;
         }
 
-        private void LocalServiceConnector_ValidatingRemoteCertificate(object? sender, ValidatingRemoteCertificateArgs e) {
+        private void DeviceConnector_ValidatingRemoteCertificate(object? sender, ValidatingRemoteCertificateArgs e) {
         }
 
-        private void LocalServiceConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
+        private void DeviceConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
         }
 
-        private void LocalServiceConnector_ConnectError(object? sender, ConnectErrorEventArgs e) {
+        private void DeviceConnector_ConnectError(object? sender, ConnectErrorEventArgs e) {
         }
 
-        private async void LocalServiceConnector_Connected(object? sender, ConnectedEventArgs e) {
+        private async void DeviceConnector_Connected(object? sender, ConnectedEventArgs e) {
             //byte[] bytes = Encoding.UTF8.GetBytes("{\"header\":{\"type\":\"ping-request\"},\"body\":{}}");
             //ReadOnlyMemory<byte> ro = new ReadOnlyMemory<byte>(bytes);
             //await _state.LocalServiceConnector.SendData(ro);
@@ -414,9 +433,9 @@ namespace Ccs3ClientApp {
             SafeChangeUI(() => {
                 bool canBeStoppedByCustomer = _state.CurrentStatusNotificationMessage.Body.CanBeStoppedByCustomer.HasValue ? _state.CurrentStatusNotificationMessage.Body.CanBeStoppedByCustomer.Value : false;
                 if (started && canBeStoppedByCustomer) {
-                    btnEndSession.Visible = true;
+                    gbCustomerCardGroup.Visible = true;
                 } else {
-                    btnEndSession.Visible = false;
+                    gbCustomerCardGroup.Visible = false;
                 }
 
                 if (canBeStoppedByCustomer && _state.CurrentStatusNotificationMessage.Body.TariffId.HasValue) {
@@ -509,7 +528,7 @@ namespace Ccs3ClientApp {
 
         private async Task SendMessage(object message) {
             var serialized = SerializeMessage(message);
-            await _state.LocalServiceConnector.SendData(serialized);
+            await _state.DeviceConnector.SendData(serialized);
         }
 
         private DateTimeOffset GetNow() {
@@ -537,7 +556,7 @@ namespace Ccs3ClientApp {
             public RestrictedAccessDesktopService DesktopService { get; set; }
             public readonly string RestrictedAccessDesktopName = "RestrictedAccessDesktop";
             public Uri LocalServiceUri { get; set; }
-            public WebSocketConnector LocalServiceConnector { get; set; }
+            public WebSocketConnector DeviceConnector { get; set; }
             public CancellationToken CancellationToken { get; set; }
             public DeviceToLocalClientConfigurationNotificationMessage? ConfigurationNotificationMessage { get; set; }
             public DeviceToLocalClientCurrentStatusNotificationMessage? CurrentStatusNotificationMessage { get; set; }
@@ -557,6 +576,19 @@ namespace Ccs3ClientApp {
                 return;
             }
             SendLocalClientToDeviceEndDeviceSessionByCustomerRequestMessage();
+        }
+
+        private async void btnChangePassword_Click(object sender, EventArgs e) {
+            ChangePasswordForm form = new();
+            DialogResult dlgResult = form.ShowDialog();
+            if (dlgResult != DialogResult.OK) {
+                return;
+            }
+            ChangePasswordFormData formData = form.GetFormData();
+            var msg = LocalClientToDeviceChangePrepaidTariffPasswordByCustomerRequestMessageHelper.CreateMessage();
+            msg.Body.CurrentPasswordHash = Utils.GetSha512(formData.CurrentPassword);
+            msg.Body.NewPasswordHash = Utils.GetSha512(formData.NewPassword);
+            await SendMessage(msg);
         }
     }
 }

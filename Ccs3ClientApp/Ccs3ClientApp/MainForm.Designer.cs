@@ -38,6 +38,9 @@
             lblTotalSum = new Label();
             lblTotalSumValue = new Label();
             btnEndSession = new Button();
+            gbCustomerCardGroup = new GroupBox();
+            btnChangePassword = new Button();
+            gbCustomerCardGroup.SuspendLayout();
             SuspendLayout();
             // 
             // notifyIconMain
@@ -136,21 +139,43 @@
             // btnEndSession
             // 
             btnEndSession.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            btnEndSession.Location = new Point(12, 234);
+            btnEndSession.Location = new Point(6, 34);
             btnEndSession.Name = "btnEndSession";
             btnEndSession.Size = new Size(175, 48);
             btnEndSession.TabIndex = 8;
             btnEndSession.Text = "End session";
             btnEndSession.UseVisualStyleBackColor = true;
-            btnEndSession.Visible = false;
             btnEndSession.Click += btnEndSession_Click;
+            // 
+            // gbCustomerCardGroup
+            // 
+            gbCustomerCardGroup.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            gbCustomerCardGroup.Controls.Add(btnChangePassword);
+            gbCustomerCardGroup.Controls.Add(btnEndSession);
+            gbCustomerCardGroup.Location = new Point(12, 231);
+            gbCustomerCardGroup.Name = "gbCustomerCardGroup";
+            gbCustomerCardGroup.Size = new Size(440, 89);
+            gbCustomerCardGroup.TabIndex = 9;
+            gbCustomerCardGroup.TabStop = false;
+            gbCustomerCardGroup.Text = "Customer card";
+            gbCustomerCardGroup.Visible = false;
+            // 
+            // btnChangePassword
+            // 
+            btnChangePassword.Location = new Point(187, 34);
+            btnChangePassword.Name = "btnChangePassword";
+            btnChangePassword.Size = new Size(247, 48);
+            btnChangePassword.TabIndex = 9;
+            btnChangePassword.Text = "Change password";
+            btnChangePassword.UseVisualStyleBackColor = true;
+            btnChangePassword.Click += btnChangePassword_Click;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(14F, 27F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(557, 294);
-            Controls.Add(btnEndSession);
+            ClientSize = new Size(621, 332);
+            Controls.Add(gbCustomerCardGroup);
             Controls.Add(lblTotalSumValue);
             Controls.Add(lblTotalSum);
             Controls.Add(lblTotalTimeValue);
@@ -166,6 +191,7 @@
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             Click += MainForm_Click;
+            gbCustomerCardGroup.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -182,5 +208,7 @@
         private Label lblTotalSum;
         private Label lblTotalSumValue;
         private Button btnEndSession;
+        private GroupBox gbCustomerCardGroup;
+        private Button btnChangePassword;
     }
 }

@@ -1,0 +1,9 @@
+﻿using Ccs3ClientAppWindowsService.Messages.Device.Declarations;
+
+namespace Ccs3ClientAppWindowsService.Messages.Device;
+
+public class ServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessageBody {
+}
+
+public class ServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessage : ServerToDeviceReplyMessage<ServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessageBody>{
+}
