@@ -3,8 +3,9 @@ using Ccs3ClientAppWindowsService.Messages.Device;
 using Ccs3ClientAppWindowsService.Messages.Device.Declarations;
 using Ccs3ClientAppWindowsService.Messages.LocalClient;
 using Ccs3ClientAppWindowsService.Messages.LocalClient.Declarations;
-using Microsoft.VisualBasic;
+using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.WebSockets;
@@ -23,6 +24,7 @@ public class Worker : BackgroundService {
     private WebSocketConnector _serverWsConnector = new();
     private readonly string _serviceName = "Ccs3ClientAppWindowsService";
     private readonly CertificateHelper _certificateHelper = new();
+    private readonly RegistryHelper _registryHelper = new();
     private bool _disableClientAppProcessStartLogs = false;
     private JsonSerializerOptions _jsonSerializerOptions;
     private ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> _deviceConfigNotificationMsg;
@@ -325,7 +327,7 @@ public class Worker : BackgroundService {
                 _logger.LogDebug("Received string '{0}'", stringData);
             }
             try {
-                ProcessServerConnectorReceivedData(stringData);
+                ProcessServerToDeviceReceivedData(stringData);
             } catch (Exception ex) {
                 _logger.LogError(ex, "Can't process received data '{0}'", stringData);
             }
@@ -334,7 +336,7 @@ public class Worker : BackgroundService {
         }
     }
 
-    private void ProcessServerConnectorReceivedData(string stringData) {
+    private void ProcessServerToDeviceReceivedData(string stringData) {
         PartialMessage msg = DeserializePartialMessage(stringData);
         string msgType = msg.Header.Type;
         switch (msgType) {
@@ -362,7 +364,7 @@ public class Worker : BackgroundService {
         TransferReplyHeader(msg.Header, dtlcMsg.Header);
         dtlcMsg.Body.Success = msg.Body.Success;
         dtlcMsg.Body.PasswordDoesNotMatch = msg.Body.PasswordDoesNotMatch;
-        dtlcMsg.Body.AlreadyInUse = msg.Body.AlreadyInUse;  
+        dtlcMsg.Body.AlreadyInUse = msg.Body.AlreadyInUse;
         dtlcMsg.Body.RemainingSeconds = msg.Body.RemainingSeconds;
         var serialized = SerializeDeviceToLocalClientReplyMessage(dtlcMsg);
         SendToAllLocalClients(serialized);
@@ -379,8 +381,29 @@ public class Worker : BackgroundService {
         _deviceConfigNotificationMsg = msg;
     }
 
+    private void HandleStartedToStoppedTransition() {
+        _state.StartedToStoppedTransitionDate = DateTimeOffset.Now;
+        // Disable Task manager
+        _registryHelper.ChangeTaskManagerAvailability(false);
+    }
+
+    private void HandleStoppedToStartedTransition() {
+        _state.StartedToStoppedTransitionDate = null;
+        // Enable task manager
+        _registryHelper.ChangeTaskManagerAvailability(true);
+    }
+
     private void ProcessServerToDeviceCurrentStatusNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> msg) {
         _deviceCurrentStatusNotificationMsg = msg;
+        if (_state.StartedState == true && msg.Body.Started == false) {
+            // Was started but now it is stopped
+            HandleStartedToStoppedTransition();
+        } else if (_state.StartedState == false && msg.Body.Started == true) {
+            // Was stopped but now it is started
+            HandleStoppedToStartedTransition();
+        }
+
+        _state.StartedState = msg.Body.Started;
         var msgToSend = DeviceToLocalClientCurrentStatusNotificationMessageHelper.CreateMessage();
         msgToSend.Body = new DeviceToLocalClientCurrentStatusNotificationMessageBody {
             Started = msg.Body.Started,
@@ -718,6 +741,8 @@ public class Worker : BackgroundService {
         _state.LastServicePingDateTime = GetNow();
         _state.LocalClientPingInterval = 5000;
         _state.WebSockets = new ConcurrentDictionary<WebSocket, ClientWebSocketState>();
+        // Always start in started state
+        _state.StartedState = true;
     }
 
     private void LogClientAppProcessData(Action logAction) {
@@ -803,5 +828,7 @@ public class Worker : BackgroundService {
         public CancellationToken AppCancellationToken { get; set; }
         public int LocalClientPingInterval { get; set; }
         public ConcurrentDictionary<WebSocket, ClientWebSocketState> WebSockets { get; set; }
+        public bool StartedState { get; set; }
+        public DateTimeOffset? StartedToStoppedTransitionDate { get; set; }
     }
 }
