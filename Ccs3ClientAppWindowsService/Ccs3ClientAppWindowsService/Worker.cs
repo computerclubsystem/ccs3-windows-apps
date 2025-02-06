@@ -237,6 +237,10 @@ public class Worker : BackgroundService {
                     SendDeviceToServerRequestMessage(toServerReqMsg, toServerReqMsg.Header);
                     break;
                 }
+            case LocalClientToDeviceRequestMessageType.RestartNow: {
+                    _restartWindowsHelper.Restart();
+                    break;
+                }
         }
     }
 

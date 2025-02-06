@@ -13,6 +13,7 @@ using System.Windows.Forms;
 namespace Ccs3ClientApp {
     public partial class RestrictedAccessDesktopForm : Form {
         public event EventHandler<CustomerSignInEventArgs> CustomerSignIn;
+        public event EventHandler<EventArgs> RestartNow;
 
         private bool _canClose = false;
 
@@ -28,10 +29,12 @@ namespace Ccs3ClientApp {
             SafeChangeUI(() => {
                 if (seconds <= 0) {
                     lblSecondsBeforeRestart.Visible = false;
+                    btnRestartNow.Visible = false;
                     return;
                 }
                 lblSecondsBeforeRestart.Visible = true;
                 lblSecondsBeforeRestart.Text = "Restaring in " + seconds.ToString() + " seconds";
+                btnRestartNow.Visible = true;
             });
         }
 
@@ -100,6 +103,10 @@ namespace Ccs3ClientApp {
             } else {
                 action();
             }
+        }
+
+        private void btnRestartNow_Click(object sender, EventArgs e) {
+            RestartNow?.Invoke(this, EventArgs.Empty);
         }
     }
 

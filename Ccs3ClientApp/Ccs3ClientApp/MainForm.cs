@@ -58,6 +58,7 @@ namespace Ccs3ClientApp {
                     _state.DesktopService.SetCurrentThreadDesktop(restrictedAccessDesktopPointer);
                     _state.RestrictedAccessDesktopForm = new();
                     _state.RestrictedAccessDesktopForm.CustomerSignIn += RadForm_CustomerSignIn;
+                    _state.RestrictedAccessDesktopForm.RestartNow += RadForm_RestartNow;
                     Application.Run(_state.RestrictedAccessDesktopForm);
                 });
                 Debug.WriteLine(string.Format("Restricted desktop has been created: {0}", _state.DesktopService.GetRestrictedAccessDesktopPointer()));
@@ -65,6 +66,11 @@ namespace Ccs3ClientApp {
                 var lastError = _state.DesktopService.GetLastError();
                 Debug.WriteLine(string.Format("Cannot create restricted access desktop. Error {0}", lastError));
             }
+        }
+
+        private async void RadForm_RestartNow(object? sender, EventArgs e) {
+            var reqMsg = LocalClientToDeviceRestartNowRequestMessageHelper.CreateMessage();
+            await SendMessage(reqMsg);
         }
 
         private void DebugCreateRestrictedDesktop() {
@@ -77,6 +83,7 @@ namespace Ccs3ClientApp {
                 _state.RestrictedAccessDesktopForm.ControlBox = true;
                 _state.RestrictedAccessDesktopForm.ShowInTaskbar = true;
                 _state.RestrictedAccessDesktopForm.CustomerSignIn += RadForm_CustomerSignIn;
+                _state.RestrictedAccessDesktopForm.RestartNow += RadForm_RestartNow;
                 Application.Run(_state.RestrictedAccessDesktopForm);
             });
 

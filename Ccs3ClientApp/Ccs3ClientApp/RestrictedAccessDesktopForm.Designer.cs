@@ -33,6 +33,7 @@
             txtCustomerCardID = new TextBox();
             chkToggleCustomerCardSignIn = new CheckBox();
             lblSecondsBeforeRestart = new Label();
+            btnRestartNow = new Button();
             gbCustomerSignIn.SuspendLayout();
             SuspendLayout();
             // 
@@ -159,6 +160,18 @@
             lblSecondsBeforeRestart.Text = "Restarting in ...";
             lblSecondsBeforeRestart.Visible = false;
             // 
+            // btnRestartNow
+            // 
+            btnRestartNow.BackColor = Color.Orange;
+            btnRestartNow.Location = new Point(15, 285);
+            btnRestartNow.Name = "btnRestartNow";
+            btnRestartNow.Size = new Size(179, 31);
+            btnRestartNow.TabIndex = 5;
+            btnRestartNow.Text = "Restart now";
+            btnRestartNow.UseVisualStyleBackColor = false;
+            btnRestartNow.Visible = false;
+            btnRestartNow.Click += btnRestartNow_Click;
+            // 
             // RestrictedAccessDesktopForm
             // 
             AutoScaleDimensions = new SizeF(9F, 18F);
@@ -166,6 +179,7 @@
             BackColor = Color.Black;
             ClientSize = new Size(1029, 540);
             ControlBox = false;
+            Controls.Add(btnRestartNow);
             Controls.Add(lblSecondsBeforeRestart);
             Controls.Add(chkToggleCustomerCardSignIn);
             Controls.Add(gbCustomerSignIn);
@@ -200,5 +214,6 @@
         private Label lblCustomerSignInErrorMessage;
         private CheckBox chkToggleCustomerCardSignIn;
         private Label lblSecondsBeforeRestart;
+        private Button btnRestartNow;
     }
 }
