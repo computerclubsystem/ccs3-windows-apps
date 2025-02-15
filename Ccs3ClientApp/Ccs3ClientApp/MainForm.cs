@@ -120,12 +120,21 @@ namespace Ccs3ClientApp {
             notifyIconMain.Click += NotifyIconMain_Click;
             notifyIconMain.Icon = this.Icon;
             notifyIconMain.ShowBalloonTip(3000, "Ccs3 Client App", "От тук може да видите информация за текущата сесия", ToolTipIcon.Info);
+            notifyIconMain.BalloonTipClicked += NotifyIconMain_BalloonTipClicked;
             lblRemainingTimeValue.Text = "";
             Text = "Ccs3 Client App " + typeof(MainForm).Assembly.GetName().Version.ToString();
             Initialize();
         }
 
+        private void NotifyIconMain_BalloonTipClicked(object? sender, EventArgs e) {
+            ShowAndActivateMainWindow();
+        }
+
         private void NotifyIconMain_Click(object? sender, EventArgs e) {
+            ShowAndActivateMainWindow();
+        }
+
+        private void ShowAndActivateMainWindow() {
             Show();
             if (this.WindowState == FormWindowState.Minimized) {
                 this.WindowState = FormWindowState.Normal;

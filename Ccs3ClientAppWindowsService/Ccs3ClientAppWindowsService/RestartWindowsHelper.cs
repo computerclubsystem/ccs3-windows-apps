@@ -33,7 +33,6 @@ ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);
     internal const int SE_PRIVILEGE_ENABLED = 0x00000002;
     internal const int TOKEN_QUERY = 0x00000008;
     internal const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;
-    internal const string SE_TIME_ZONE_NAMETEXT = "SeTimeZonePrivilege";
 
     public bool Restart() {
 #if DEBUG
