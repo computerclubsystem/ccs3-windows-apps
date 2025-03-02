@@ -40,6 +40,8 @@
             btnEndSession = new Button();
             gbCustomerCardGroup = new GroupBox();
             btnChangePassword = new Button();
+            lblContinuationTariff = new Label();
+            lblContinuationTariffValue = new Label();
             gbCustomerCardGroup.SuspendLayout();
             SuspendLayout();
             // 
@@ -152,7 +154,7 @@
             gbCustomerCardGroup.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             gbCustomerCardGroup.Controls.Add(btnChangePassword);
             gbCustomerCardGroup.Controls.Add(btnEndSession);
-            gbCustomerCardGroup.Location = new Point(12, 231);
+            gbCustomerCardGroup.Location = new Point(12, 293);
             gbCustomerCardGroup.Name = "gbCustomerCardGroup";
             gbCustomerCardGroup.Size = new Size(440, 89);
             gbCustomerCardGroup.TabIndex = 9;
@@ -170,11 +172,32 @@
             btnChangePassword.UseVisualStyleBackColor = true;
             btnChangePassword.Click += btnChangePassword_Click;
             // 
+            // lblContinuationTariff
+            // 
+            lblContinuationTariff.AutoSize = true;
+            lblContinuationTariff.Location = new Point(24, 205);
+            lblContinuationTariff.Name = "lblContinuationTariff";
+            lblContinuationTariff.Size = new Size(201, 27);
+            lblContinuationTariff.TabIndex = 10;
+            lblContinuationTariff.Text = "Will continue with";
+            lblContinuationTariff.Visible = false;
+            // 
+            // lblContinuationTariffValue
+            // 
+            lblContinuationTariffValue.AutoSize = true;
+            lblContinuationTariffValue.Location = new Point(270, 205);
+            lblContinuationTariffValue.Name = "lblContinuationTariffValue";
+            lblContinuationTariffValue.Size = new Size(0, 27);
+            lblContinuationTariffValue.TabIndex = 11;
+            lblContinuationTariffValue.Visible = false;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(14F, 27F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(621, 332);
+            ClientSize = new Size(621, 394);
+            Controls.Add(lblContinuationTariffValue);
+            Controls.Add(lblContinuationTariff);
             Controls.Add(gbCustomerCardGroup);
             Controls.Add(lblTotalSumValue);
             Controls.Add(lblTotalSum);
@@ -210,5 +233,7 @@
         private Button btnEndSession;
         private GroupBox gbCustomerCardGroup;
         private Button btnChangePassword;
+        private Label lblContinuationTariff;
+        private Label lblContinuationTariffValue;
     }
 }

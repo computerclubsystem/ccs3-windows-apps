@@ -8,6 +8,7 @@ public class DeviceToLocalClientCurrentStatusNotificationMessageBody {
     public int? TariffId { get; set; }
     public bool? CanBeStoppedByCustomer { get; set; }
     public DeviceStatusAmounts Amounts { get; set; }
+    public TariffShortInfo? ContinuationTariffShortInfo { get; set; }
 }
 
 public class DeviceToLocalClientCurrentStatusNotificationMessage : DeviceToLocalClientNotificationMessage<DeviceToLocalClientCurrentStatusNotificationMessageBody> {

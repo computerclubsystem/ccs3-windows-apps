@@ -433,7 +433,6 @@ namespace Ccs3ClientApp {
                 if (canBeStoppedByCustomer && _state.CurrentStatusNotificationMessage.Body.TariffId.HasValue) {
 
                 }
-
                 var amounts = _state.CurrentStatusNotificationMessage.Body.Amounts;
                 if (amounts.RemainingSeconds.HasValue && amounts.RemainingSeconds.Value > 0) {
                     //var ts = TimeSpan.FromSeconds(amounts.RemainingSeconds.Value);
@@ -448,6 +447,20 @@ namespace Ccs3ClientApp {
                     notifyIconMain.Text = "Ccs3 Client App. Remaining time " + finalText;
                 } else {
                     lblRemainingTimeValue.Text = "0";
+                }
+                var continuationTariffInfo = _state.CurrentStatusNotificationMessage.Body.ContinuationTariffShortInfo;
+                if (continuationTariffInfo != null) {
+                    string tariffDurationText = string.Empty;
+                    if (continuationTariffInfo.Duration.HasValue) {
+                        tariffDurationText = SecondsToDurationText(continuationTariffInfo.Duration.Value * 60);
+                    }
+                    string finalText = continuationTariffInfo.Name + (!string.IsNullOrWhiteSpace(tariffDurationText) ? $" ( {tariffDurationText} )" : string.Empty);
+                    lblContinuationTariffValue.Text = finalText;
+                    lblContinuationTariff.Visible = true;
+                    lblContinuationTariffValue.Visible = true;
+                } else {
+                    lblContinuationTariff.Visible = false;
+                    lblContinuationTariffValue.Visible = false;
                 }
                 if (amounts.StartedAt.HasValue) {
                     var startedAt = DateTimeOffset.FromUnixTimeMilliseconds(amounts.StartedAt.Value);

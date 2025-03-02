@@ -435,6 +435,7 @@ public class Worker : BackgroundService {
             CanBeStoppedByCustomer = msg.Body.CanBeStoppedByCustomer,
             TariffId = msg.Body.TariffId,
             Amounts = msg.Body.Amounts,
+            ContinuationTariffShortInfo = msg.Body.ContinuationTariffShortInfo,
         };
         string serialized = SerializeDeviceToLocalClientNotificationMessage(msgToSend);
         SendToAllLocalClients(serialized);
