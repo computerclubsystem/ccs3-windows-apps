@@ -10,6 +10,8 @@ public class DeviceToLocalClientStartOnPrepaidTariffReplyMessageBody {
     public bool? AlreadyInUse { get; set; }
     public bool? NotAllowed { get; set; }
     public bool? PasswordDoesNotMatch { get; set; }
+    public bool? NoRemainingTime { get; set; }
+    public bool? NotAvailableForThisDeviceGroup { get; set; }
     public int? RemainingSeconds { get; set; }
     public bool? Success { get; set; }
 }

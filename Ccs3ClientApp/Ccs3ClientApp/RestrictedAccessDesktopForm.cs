@@ -38,12 +38,24 @@ namespace Ccs3ClientApp {
             });
         }
 
-        public void SetCustomerSignInResult(bool passwordDoesNotMatch, bool notAllowed, bool alreadyInUse, bool success) {
-            SafeChangeUI(() => SetSignInResult(passwordDoesNotMatch, notAllowed, alreadyInUse, success));
+        public void SetCustomerSignInResult(DeviceToLocalClientStartOnPrepaidTariffReplyMessage message) {
+            SafeChangeUI(() => SetSignInResult(message));
         }
 
-        private void SetSignInResult(bool passwordDoesNotMatch, bool notAllowed, bool alreadyInUse, bool success) {
+        private void SetSignInResult(DeviceToLocalClientStartOnPrepaidTariffReplyMessage msg) {
+            bool success = false;
+            if (msg.Header.Failure.HasValue && msg.Header.Failure.Value == true) {
+                success = false;
+            } else {
+                success = msg.Body.Success ?? false;
+            }
+            var body = msg.Body;
             lblCustomerSignInErrorMessage.Visible = false;
+            bool passwordDoesNotMatch = body.PasswordDoesNotMatch ?? false;
+            bool notAllowed = body.NotAllowed ?? false;
+            bool alreadyInUse = body.AlreadyInUse ?? false;
+            bool notAvailableForThisDeviceGroup = body.NotAvailableForThisDeviceGroup ?? false;
+            bool noRemainingTime = body.NoRemainingTime ?? false;
             if (passwordDoesNotMatch) {
                 lblCustomerSignInErrorMessage.Text = "Password does not match";
                 lblCustomerSignInErrorMessage.Visible = true;
@@ -52,6 +64,12 @@ namespace Ccs3ClientApp {
                 lblCustomerSignInErrorMessage.Visible = true;
             } else if (alreadyInUse) {
                 lblCustomerSignInErrorMessage.Text = "The card is already in use on another computer";
+                lblCustomerSignInErrorMessage.Visible = true;
+            } else if (notAvailableForThisDeviceGroup) {
+                lblCustomerSignInErrorMessage.Text = "The card is not available for this device group";
+                lblCustomerSignInErrorMessage.Visible = true;
+            } else if (noRemainingTime) {
+                lblCustomerSignInErrorMessage.Text = "The card has no remaining time";
                 lblCustomerSignInErrorMessage.Visible = true;
             } else if (!success) {
                 lblCustomerSignInErrorMessage.Text = "Generic error";

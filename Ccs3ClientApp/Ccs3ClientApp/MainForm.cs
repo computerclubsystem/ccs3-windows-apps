@@ -260,34 +260,6 @@ namespace Ccs3ClientApp {
                         break;
                     }
             }
-
-            //LocalClientPartialMessage partialMsg = DeserializeLocalClientPartialMessage(stringData);
-            //if (partialMsg?.Header?.Type == null) {
-            //    // TODO: Can't process the message
-            //    return;
-            //}
-
-            //string msgType = partialMsg.Header.Type;
-            //switch (msgType) {
-            //    case LocalClientNotificationMessageType.Configuration:
-            //        //// TODO: Deserialize to concrete message, not to LocalClientNotificationMessage<TBody>
-            //        //var genericMsg = DeserializeLocalClientNotificationMessage<LocalClientConfigurationNotificationMessageBody>(stringData);
-            //        //LocalClientConfigurationNotificationMessage msg = new() {
-            //        //    Header = genericMsg.Header,
-            //        //    Body = genericMsg.Body,
-            //        //};
-            //        //ProcessLocalClientConfigurationNotificationMessage(msg);
-            //        var configurationNotificationMsg = DeserializeLocalClientNotificationMessage<LocalClientConfigurationNotificationMessage, LocalClientConfigurationNotificationMessageBody>(stringData);
-            //        ProcessLocalClientConfigurationNotificationMessage(configurationNotificationMsg);
-            //        break;
-            //    case LocalClientNotificationMessageType.Status:
-            //        var statusNotificationMsg = DeserializeLocalClientNotificationMessage<LocalClientStatusNotificationMessage, LocalClientStatusNotificationMessageBody>(stringData);
-            //        ProcessLocalClientStatusNotificationMessage(statusNotificationMsg);
-            //        break;
-            //    default:
-            //        // TODO: Unknown message type
-            //        break;
-            //}
         }
 
         private void ProcessDeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessage(DeviceToLocalClientChangePrepaidTariffPasswordByCustomerReplyMessage msg) {
@@ -299,15 +271,7 @@ namespace Ccs3ClientApp {
         }
 
         private void ProcessDeviceToLocalClientStartOnPrepaidTariffReplyMessage(DeviceToLocalClientStartOnPrepaidTariffReplyMessage msg) {
-            bool passwordDoesNotMatch = msg.Body.PasswordDoesNotMatch ?? false;
-            bool alreadyInUse = msg.Body.AlreadyInUse ?? false;
-            bool notAllowed = msg.Body.NotAllowed ?? false;
-            bool success = msg.Body.Success ?? false;
-            if (msg.Header.Failure.HasValue && msg.Header.Failure.Value == true) {
-                notAllowed = false;
-                success = false;
-            }
-            _state.RestrictedAccessDesktopForm.SetCustomerSignInResult(passwordDoesNotMatch, notAllowed, alreadyInUse, success);
+            _state.RestrictedAccessDesktopForm.SetCustomerSignInResult(msg);
         }
 
         private TMessage DeserializeDeviceToLocalClientReplyMessage<TMessage, TBody>(string jsonString) where TMessage : DeviceToLocalClientReplyMessage<TBody>, new() {

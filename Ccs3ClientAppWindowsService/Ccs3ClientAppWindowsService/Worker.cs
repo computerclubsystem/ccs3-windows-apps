@@ -388,6 +388,8 @@ public class Worker : BackgroundService {
         dtlcMsg.Body.Success = msg.Body.Success;
         dtlcMsg.Body.PasswordDoesNotMatch = msg.Body.PasswordDoesNotMatch;
         dtlcMsg.Body.AlreadyInUse = msg.Body.AlreadyInUse;
+        dtlcMsg.Body.NotAvailableForThisDeviceGroup = msg.Body.NotAvailableForThisDeviceGroup;
+        dtlcMsg.Body.NoRemainingTime = msg.Body.NoRemainingTime;
         dtlcMsg.Body.RemainingSeconds = msg.Body.RemainingSeconds;
         var serialized = SerializeDeviceToLocalClientReplyMessage(dtlcMsg);
         SendToAllLocalClients(serialized);
