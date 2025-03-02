@@ -489,7 +489,7 @@ namespace Ccs3ClientApp {
         private string SecondsToDurationText(long seconds) {
             var ts = TimeSpan.FromSeconds(seconds);
             var hours = ts.Days * 24 + ts.Hours;
-            var hoursText = ts.Hours > 0 ? $"{hours}h." : "";
+            var hoursText = hours > 0 ? $"{hours}h." : "";
             var minutesText = ts.Minutes > 0 ? $"{ts.Minutes}m." : "";
             var secondsText = ts.Seconds > 0 ? $"{ts.Seconds}s." : "";
             string[] parts = new string[] { hoursText, minutesText, secondsText };
