@@ -419,6 +419,15 @@ public class Worker : BackgroundService {
     }
 
     private void ProcessServerToDeviceCurrentStatusNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> msg) {
+        // If this is the first message and it is for stopped - apply restrictions as it was stopped
+        if (_deviceCurrentStatusNotificationMsg == null) {
+            // This is the first current status notification message
+            if (msg.Body.Started == false) {
+                // The first status notification message indicates the computer must be stopped
+                // Do the "stopped computer" activities - in this case just disable the task manager
+                _registryHelper.ChangeTaskManagerAvailability(false);
+            }
+        }
         _deviceCurrentStatusNotificationMsg = msg;
         if (_state.StartedState == true && msg.Body.Started == false) {
             // Was started but now it is stopped
