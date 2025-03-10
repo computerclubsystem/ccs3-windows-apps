@@ -424,7 +424,11 @@ public class Worker : BackgroundService {
             // This is the first current status notification message
             if (msg.Body.Started == false) {
                 // The first status notification message indicates the computer must be stopped
-                // Do the "stopped computer" activities - in this case just disable the task manager
+                // Perform the "stopped computer" activities - in this case just disable the task manager
+                _registryHelper.ChangeTaskManagerAvailability(false);
+            } else if (msg.Body.Started == true) {
+                // The first status notification message indicates the computer must be started
+                // Perform the "started computer" activities - in this case just enable the task manager
                 _registryHelper.ChangeTaskManagerAvailability(false);
             }
         }
