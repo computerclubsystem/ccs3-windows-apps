@@ -14,7 +14,7 @@ namespace Ccs3HttpToUdpProxyWindowsService;
 
 public class Program {
     private static ILogger _logger;
-    private static readonly string _serviceName = "Ccs3HttpToUdpWindowsService";
+    private static readonly string _serviceName = "Ccs3HttpToUdpProxyWindowsService";
     private static X509Certificate2? _localCert;
     private static WebApplicationBuilder _builder;
     private static WebApplication _app;
