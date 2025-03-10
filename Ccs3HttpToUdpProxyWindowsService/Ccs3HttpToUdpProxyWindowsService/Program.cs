@@ -21,6 +21,8 @@ public class Program {
     private static Dictionary<string, string> _requiredHeaders = new Dictionary<string, string>();
     private static bool _sendingUdpPackets = false;
     private static string? _allowedIpAddress = null;
+    private static PacketsSender _packetSender;
+
     enum ProcessExitCode {
         LocalServiceCertificateNotFound = 1
     }
@@ -31,6 +33,7 @@ public class Program {
         LoggerProviderOptions.RegisterProviderOptions<EventLogSettings, EventLogLoggerProvider>(builder.Services);
         var (loggerFactory, logger) = CreateLogger();
         _logger = logger;
+        _packetSender = new PacketsSender(_logger);
         _localCert = GetLocalServiceCertificate();
         if (_localCert == null) {
             var exitCode = (int)ProcessExitCode.LocalServiceCertificateNotFound;
@@ -63,34 +66,36 @@ public class Program {
                 ctx.Response.StatusCode = 400;
                 return;
             }
-            SendUdpPackets(payload);
+            if (payload != null && payload.PacketsData != null && payload.PacketsData.Length > 0) {
+                _packetSender.SendUdpPackets(payload);
+            }
         });
         app.Run();
         return 0;
     }
 
-    private static async void SendUdpPackets(SendPacketsRequest payload) {
-        if (_sendingUdpPackets) {
-            return;
-        }
-        _sendingUdpPackets = true;
-        using UdpClient udpClient = new UdpClient();
+    //private static async void SendUdpPackets(SendPacketsRequest payload) {
+    //    if (_sendingUdpPackets) {
+    //        return;
+    //    }
+    //    _sendingUdpPackets = true;
+    //    using UdpClient udpClient = new UdpClient();
 
-        for (int i = 0; i < payload.PacketsData.Length; i++) {
-            var packetData = payload.PacketsData[i];
-            try {
-                IPEndPoint endpoint = new IPEndPoint(IPAddress.Parse(packetData.DestinationIpAddress), packetData.DestinationPort);
-                byte[] packetBytes = Convert.FromHexString(packetData.PacketHexString);
-                await udpClient.SendAsync(packetBytes, packetBytes.Length, endpoint);
-                if (payload.DelayBetweenPacketsMilliseconds > 0 && i < payload.PacketsData.Length) {
-                    await Task.Delay(payload.DelayBetweenPacketsMilliseconds);
-                }
-            } catch (Exception ex) {
-                _logger.LogError(ex, $"Can't send packet to {packetData.DestinationIpAddress}:{packetData.DestinationPort}");
-            }
-        }
-        _sendingUdpPackets = false;
-    }
+    //    for (int i = 0; i < payload.PacketsData.Length; i++) {
+    //        var packetData = payload.PacketsData[i];
+    //        try {
+    //            IPEndPoint endpoint = new IPEndPoint(IPAddress.Parse(packetData.DestinationIpAddress), packetData.DestinationPort);
+    //            byte[] packetBytes = Convert.FromHexString(packetData.PacketHexString);
+    //            await udpClient.SendAsync(packetBytes, packetBytes.Length, endpoint);
+    //            if (payload.DelayBetweenPacketsMilliseconds > 0 && i < payload.PacketsData.Length) {
+    //                await Task.Delay(payload.DelayBetweenPacketsMilliseconds);
+    //            }
+    //        } catch (Exception ex) {
+    //            _logger.LogError(ex, $"Can't send packet to {packetData.DestinationIpAddress}:{packetData.DestinationPort}");
+    //        }
+    //    }
+    //    _sendingUdpPackets = false;
+    //}
 
     private static bool ValidateSourceIpAddress(string? allowedIpAddress, string? requestIpAddress) {
         if (string.IsNullOrWhiteSpace(allowedIpAddress)) {
@@ -173,7 +178,7 @@ public class Program {
             IPAddress preferredIPAddress = GetPreferredIPAddressForListen(resolvedIPAddresses);
             _logger.LogInformation("Trying to listen on '{0}' ('{1}:{2}')", listenUri.ToString(), preferredIPAddress.ToString(), listenUri.Port);
             serverOptions.Listen(preferredIPAddress, listenUri.Port, listenOptions => {
-                listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2AndHttp3;
+                listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2;
                 listenOptions.UseHttps(httpsConfig => {
                     httpsConfig.ServerCertificate = _localCert;
                     // httpsConfig.SslProtocols = System.Security.Authentication.SslProtocols.Tls13;
