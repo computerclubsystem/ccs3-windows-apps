@@ -429,7 +429,7 @@ public class Worker : BackgroundService {
             } else if (msg.Body.Started == true) {
                 // The first status notification message indicates the computer must be started
                 // Perform the "started computer" activities - in this case just enable the task manager
-                _registryHelper.ChangeTaskManagerAvailability(false);
+                _registryHelper.ChangeTaskManagerAvailability(true);
             }
         }
         _deviceCurrentStatusNotificationMsg = msg;
