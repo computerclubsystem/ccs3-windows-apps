@@ -20,7 +20,7 @@ public class PacketsSender {
         lock (_lock) {
             if (_isSending) {
                 if (_logger.IsEnabled(LogLevel.Information)) {
-                    _logger.LogInformation("Request arrived while processing another one");
+                    LogInformation("Request arrived while processing another one");
                 }
                 _pendingRequest = payload;
                 return;
@@ -46,14 +46,14 @@ public class PacketsSender {
         using UdpClient udpClient = new UdpClient();
         if (_logger.IsEnabled(LogLevel.Information)) {
             string message = "Start processing. Elements count " + payload.PacketsData.Length.ToString();
-            _logger.LogInformation(message);
+            LogInformation(message);
         }
         for (int i = 0; i < packetItems.Count; i++) {
             var packetData = packetItems[i];
             if (packetData != null) {
                 if (_logger.IsEnabled(LogLevel.Information)) {
                     string message = $"Sending to {packetData.DestinationIpAddress}:{packetData.DestinationPort} {packetData.PacketHexString}";
-                    _logger.LogInformation(message);
+                    LogInformation(message);
                 }
                 try {
                     IPEndPoint endpoint = new IPEndPoint(IPAddress.Parse(packetData.DestinationIpAddress), packetData.DestinationPort);
@@ -70,13 +70,13 @@ public class PacketsSender {
             }
         }
         if (_logger.IsEnabled(LogLevel.Information)) {
-            _logger.LogInformation("Processing finished");
+            LogInformation("Processing finished");
         }
         SendPacketsRequest? pendingReq = null;
         lock (_lock) {
             if (_pendingRequest != null) {
                 if (_logger.IsEnabled(LogLevel.Information)) {
-                    _logger.LogInformation("Processing pending request");
+                    LogInformation("Processing pending request");
                 }
                 pendingReq = _pendingRequest;
                 _pendingRequest = null;
@@ -86,5 +86,9 @@ public class PacketsSender {
         if (pendingReq != null) {
             SendUdpPackets(pendingReq);
         }
+    }
+
+    private void LogInformation(string message) {
+        _logger.LogInformation($"{DateTime.Now.ToString("O")} {message}");
     }
 }
