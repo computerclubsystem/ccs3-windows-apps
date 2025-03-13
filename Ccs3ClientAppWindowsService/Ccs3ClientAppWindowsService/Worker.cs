@@ -351,6 +351,10 @@ public class Worker : BackgroundService {
         PartialMessage msg = DeserializePartialMessage(stringData);
         string msgType = msg.Header.Type;
         switch (msgType) {
+            case ServerToDeviceNotificationMessageType.Shutdown:
+                ServerToDeviceNotificationMessage<ServerToDeviceShutdownNotificationMessageBody> shutdownNotificationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceShutdownNotificationMessageBody>(msg);
+                ProcessServerToDeviceShutdownNotificationMessage(shutdownNotificationMsg);
+                break;
             case ServerToDeviceReplyMessageType.ChangePrepaidTariffPasswordByCustomer:
                 // TODO: For now we will process this here
                 ServerToDeviceReplyMessage<ServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessageBody> changePrepaidTariffPasswordByCustomerReplyMsg = CreateTypedMessageFromGenericServerToDeviceReplyMessage<ServerToDeviceChangePrepaidTariffPasswordByCustomerReplyMessageBody>(msg);
@@ -416,6 +420,10 @@ public class Worker : BackgroundService {
         _state.StartedToStoppedTransitionDate = null;
         // Enable task manager
         _registryHelper.ChangeTaskManagerAvailability(true);
+    }
+
+    private void ProcessServerToDeviceShutdownNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceShutdownNotificationMessageBody> msg) {
+        this._restartWindowsHelper.Shutdown();
     }
 
     private void ProcessServerToDeviceCurrentStatusNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> msg) {

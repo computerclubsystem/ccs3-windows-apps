@@ -35,6 +35,14 @@ ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);
     internal const int TOKEN_ADJUST_PRIVILEGES = 0x00000020;
 
     public bool Restart() {
+        return InitiateShutdown(true);
+    }
+
+    public bool Shutdown() {
+        return InitiateShutdown(false);
+    }
+
+    private bool InitiateShutdown(bool rebootAfterShutdown) {
 #if DEBUG
         return true;
 #endif
@@ -43,7 +51,7 @@ ref TokPriv1Luid newst, int len, IntPtr prev, IntPtr relen);
         const uint SHTDN_REASON_FLAG_PLANNED = 0x80000000;
         const uint reasonFlags = SHTDN_REASON_MAJOR_APPLICATION | SHTDN_REASON_MINOR_MAINTENANCE | SHTDN_REASON_FLAG_PLANNED;
         EnableShutdownPrivilege();
-        return InitiateSystemShutdownExA(null, null, 0, true, true, reasonFlags);
+        return InitiateSystemShutdownExA(null, null, 0, true, rebootAfterShutdown, reasonFlags);
     }
 
     private void EnableShutdownPrivilege() {
