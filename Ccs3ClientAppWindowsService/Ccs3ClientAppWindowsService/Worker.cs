@@ -614,16 +614,16 @@ public class Worker : BackgroundService {
                 _logger.LogDebug("Sessions: {sessions}", sb.ToString());
             }
         });
-        ClientAppProcessController.WTS_SESSION_INFO? activeSession = sessions.FirstOrDefault(x => x.State == ClientAppProcessController.WTS_CONNECTSTATE_CLASS.WTSActive);
-        if (activeSession is not null) {
+        ClientAppProcessController.WTS_SESSION_INFO activeSession = sessions.FirstOrDefault(x => x.State == ClientAppProcessController.WTS_CONNECTSTATE_CLASS.WTSActive);
+        if (activeSession.SessionID > 0) {
             LogClientAppProcessData(() => {
-                _logger.LogDebug("ActiveSession: {0}", activeSession.Value.SessionID);
+                _logger.LogDebug("ActiveSession: {0}", activeSession.SessionID);
             });
             // TODO: Check if the app already runs
-            Process? clientAppProcess = GetProcessByExecutablePath(clientAppProcessExecutableFullPath, (int)activeSession.Value.SessionID);
+            Process? clientAppProcess = GetProcessByExecutablePath(clientAppProcessExecutableFullPath, (int)activeSession.SessionID);
             if (clientAppProcess == null) {
                 LogClientAppProcessData(() => {
-                    _logger.LogDebug("It seems that process with path {0} does not run in session {1}", clientAppProcessExecutableFullPath, activeSession.Value.SessionID);
+                    _logger.LogDebug("It seems that process with path {0} does not run in session {1}", clientAppProcessExecutableFullPath, activeSession.SessionID);
                 });
                 if (_startProcessAsCurrentUserResult != null && _startProcessAsCurrentUserResult.ProcInfo.hProcess != 0) {
                     ClientAppProcessController.CloseProcInfoHandles(_startProcessAsCurrentUserResult.ProcInfo);
@@ -846,7 +846,7 @@ public class Worker : BackgroundService {
 
     private Process? GetProcessByExecutablePath(string executablePath, int sessionId = -1) {
         IEnumerable<Process> processes;
-        if (sessionId != -1) {
+        if (sessionId == -1) {
             processes = Process.GetProcesses();
         } else {
             processes = Process.GetProcesses().Where(x => x.SessionId == sessionId);
