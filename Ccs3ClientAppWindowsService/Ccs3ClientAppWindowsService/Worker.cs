@@ -351,6 +351,10 @@ public class Worker : BackgroundService {
         PartialMessage msg = DeserializePartialMessage(stringData);
         string msgType = msg.Header.Type;
         switch (msgType) {
+            case ServerToDeviceNotificationMessageType.Restart:
+                ServerToDeviceNotificationMessage<ServerToDeviceRestartNotificationMessageBody> restartNotificationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceRestartNotificationMessageBody>(msg);
+                ProcessServerToDeviceRestartNotificationMessage(restartNotificationMsg);
+                break;
             case ServerToDeviceNotificationMessageType.Shutdown:
                 ServerToDeviceNotificationMessage<ServerToDeviceShutdownNotificationMessageBody> shutdownNotificationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceShutdownNotificationMessageBody>(msg);
                 ProcessServerToDeviceShutdownNotificationMessage(shutdownNotificationMsg);
@@ -420,6 +424,10 @@ public class Worker : BackgroundService {
         _state.StartedToStoppedTransitionDate = null;
         // Enable task manager
         _registryHelper.ChangeTaskManagerAvailability(true);
+    }
+
+    private void ProcessServerToDeviceRestartNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceRestartNotificationMessageBody> msg) {
+        this._restartWindowsHelper.Restart();
     }
 
     private void ProcessServerToDeviceShutdownNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceShutdownNotificationMessageBody> msg) {
