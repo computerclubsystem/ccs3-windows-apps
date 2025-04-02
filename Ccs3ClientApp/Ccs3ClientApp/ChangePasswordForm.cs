@@ -52,7 +52,8 @@ public partial class ChangePasswordForm : Form {
         string confirmNewPassword = txtConfirmNewPassword.Text;
         if (string.IsNullOrWhiteSpace(newPassword)
             || string.IsNullOrWhiteSpace(confirmNewPassword)
-            || newPassword != confirmNewPassword) {
+            || newPassword != confirmNewPassword
+            || newPassword.Length < 10) {
             canTryToChangePassword = false;
             txtNewPassword.BackColor = Color.Crimson;
             txtConfirmNewPassword.BackColor = Color.Crimson;

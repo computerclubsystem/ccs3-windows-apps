@@ -31,6 +31,7 @@ partial class ChangePasswordForm {
         txtNewPassword = new TextBox();
         txtConfirmNewPassword = new TextBox();
         btnChangePassword = new Button();
+        lblMinPasswordLength = new Label();
         SuspendLayout();
         // 
         // lblCurrentPassword
@@ -95,11 +96,22 @@ partial class ChangePasswordForm {
         btnChangePassword.UseVisualStyleBackColor = true;
         btnChangePassword.Click += btnChangePassword_Click;
         // 
+        // lblMinPasswordLength
+        // 
+        lblMinPasswordLength.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+        lblMinPasswordLength.Location = new Point(12, 134);
+        lblMinPasswordLength.Name = "lblMinPasswordLength";
+        lblMinPasswordLength.Size = new Size(545, 19);
+        lblMinPasswordLength.TabIndex = 7;
+        lblMinPasswordLength.Text = "The new password length must be at least 10 characters";
+        lblMinPasswordLength.TextAlign = ContentAlignment.MiddleLeft;
+        // 
         // ChangePasswordForm
         // 
         AutoScaleDimensions = new SizeF(14F, 27F);
         AutoScaleMode = AutoScaleMode.Font;
         ClientSize = new Size(578, 214);
+        Controls.Add(lblMinPasswordLength);
         Controls.Add(btnChangePassword);
         Controls.Add(txtConfirmNewPassword);
         Controls.Add(txtNewPassword);
@@ -125,4 +137,5 @@ partial class ChangePasswordForm {
     private TextBox txtNewPassword;
     private TextBox txtConfirmNewPassword;
     private Button btnChangePassword;
+    private Label lblMinPasswordLength;
 }
