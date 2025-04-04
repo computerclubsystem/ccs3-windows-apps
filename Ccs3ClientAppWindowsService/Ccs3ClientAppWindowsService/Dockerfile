@@ -8,7 +8,8 @@ COPY Ccs3ClientApp/*.* /usr/ccs3-published-files/Ccs3ClientApp/
 RUN apk update && apk --no-cache add zip
 RUN mkdir /usr/ccs3-zipped-files
 RUN cd /usr/ccs3-published-files/ && zip -r -9 /usr/ccs3-zipped-files/Ccs3ClientAppWindowsService.zip .
-RUN sha256sum /usr/ccs3-zipped-files/Ccs3ClientAppWindowsService.zip > /usr/ccs3-zipped-files/Ccs3ClientAppWindowsService.sha
+RUN sha512sum /usr/ccs3-zipped-files/Ccs3ClientAppWindowsService.zip > /usr/ccs3-zipped-files/Ccs3ClientAppWindowsService.sha
+RUN sha512sum /usr/ccs3-published-files/Ccs3ClientAppWindowsService.exe /usr/ccs3-published-files/Ccs3ClientApp/Ccs3ClientApp.exe > /usr/ccs3-zipped-files/ccs3-client-files-checksums.sha
 
 FROM alpine:latest
 COPY --from=build /usr/ccs3-zipped-files /usr/ccs3-zipped-files
