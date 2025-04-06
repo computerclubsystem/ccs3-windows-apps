@@ -17,6 +17,7 @@ namespace Ccs3ClientApp {
     public partial class MainForm : Form {
         private MainFormState _state;
         private System.Windows.Forms.Timer _timer;
+        private HotKeyManager _hotKeyManager = new HotKeyManager();
 
         public MainForm() {
             InitializeComponent();
@@ -28,6 +29,35 @@ namespace Ccs3ClientApp {
             var ci = CultureInfo.GetCultureInfo("bg-BG");
             Thread.CurrentThread.CurrentCulture = ci;
             Thread.CurrentThread.CurrentUICulture = ci;
+
+            _hotKeyManager.KeyPressed +=
+                new EventHandler<KeyPressedEventArgs>(hotKeyManager_KeyPressed);
+            _hotKeyManager.RegisterHotKey(
+                HotKeyModifierKeys.Control | HotKeyModifierKeys.Shift,
+                Keys.F1
+            );
+        }
+
+        void hotKeyManager_KeyPressed(object? sender, KeyPressedEventArgs e) {
+            // Process hotkeys only if not on restricted desktop
+            if (_state.CurrentStatusNotificationMessage?.Body == null) {
+                return;
+            }
+            bool started = _state.CurrentStatusNotificationMessage.Body.Started;
+            if (!started) {
+                // Not started - do not process hot keys
+                return;
+            }
+            // TODO: Instead of using TopMost as indicator whether we should show or hide the window
+            //       we should have a flag, which will be maintained on hot key and when the window
+            //       is manually shown / closed by the user
+            if (e.Key == Keys.F1 && e.Modifier == (HotKeyModifierKeys.Control | HotKeyModifierKeys.Shift)) {
+                if (TopMost) {
+                    HideMainWindow();
+                } else {
+                    ShowMainWindowOnTop();
+                }
+            }
         }
 
         // TODO: If we want to remove the close button
@@ -115,11 +145,12 @@ namespace Ccs3ClientApp {
         //}
 
         private void MainForm_Load(object sender, EventArgs e) {
+            notifyIconMain.Icon = this.Icon;
+            notifyIconMain.BalloonTipIcon = ToolTipIcon.Info;
             notifyIconMain.Visible = true;
             notifyIconMain.Text = "Ccs3 Client App";
             notifyIconMain.Click += NotifyIconMain_Click;
-            notifyIconMain.Icon = this.Icon;
-            notifyIconMain.ShowBalloonTip(3000, "Ccs3 Client App", "От тук може да видите информация за текущата сесия", ToolTipIcon.Info);
+            notifyIconMain.ShowBalloonTip(3000, "Ccs3 Client App", "CTRL+SHIFT+F1 - От тук може да видите информация за текущата сесия", ToolTipIcon.Info);
             notifyIconMain.BalloonTipClicked += NotifyIconMain_BalloonTipClicked;
             lblRemainingTimeValue.Text = "";
             Text = "Ccs3 Client App " + typeof(MainForm).Assembly.GetName().Version.ToString();
@@ -134,21 +165,38 @@ namespace Ccs3ClientApp {
             ShowAndActivateMainWindow();
         }
 
-        private void ShowAndActivateMainWindow() {
+        private void ShowMainWindow() {
             Show();
             if (this.WindowState == FormWindowState.Minimized) {
                 this.WindowState = FormWindowState.Normal;
             }
+        }
+
+        private void ShowMainWindowOnTop() {
+            ShowMainWindow();
+            Refresh();
+            this.TopMost = true;
+        }
+
+        private void HideMainWindow() {
+            Hide();
+            this.TopMost = false;
+        }
+
+        private void ShowAndActivateMainWindow() {
+            ShowMainWindow();
             Activate();
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e) {
             if (e.CloseReason == CloseReason.UserClosing) {
+                // Mark it as not topmost so hotkey will show it when pressed
+                TopMost = false;
                 // Just hide the window - the user should be able to open it again from the systray icon
                 Hide();
                 e.Cancel = true;
                 return;
-            };
+            }
 
             IntPtr radPointer = _state.DesktopService.OpenDesktop(_state.RestrictedAccessDesktopName);
             if (radPointer != IntPtr.Zero) {
@@ -410,7 +458,7 @@ namespace Ccs3ClientApp {
         }
 
         private void ProcessCurrentStatus() {
-            // TODO: Deal with desktop switching, displaying session information etc.
+            // Deal with desktop switching, displaying session information etc.
             if (_state.CurrentStatusNotificationMessage?.Body == null) {
                 return;
             }

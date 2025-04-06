@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent() {
             components = new System.ComponentModel.Container();
-            notifyIconMain = new NotifyIcon(components);
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             lblRemainingTime = new Label();
             lblRemainingTimeValue = new Label();
             lblStartedAt = new Label();
@@ -42,13 +42,10 @@
             btnChangePassword = new Button();
             lblContinuationTariff = new Label();
             lblContinuationTariffValue = new Label();
+            lblHotKey = new Label();
+            notifyIconMain = new NotifyIcon(components);
             gbCustomerCardGroup.SuspendLayout();
             SuspendLayout();
-            // 
-            // notifyIconMain
-            // 
-            notifyIconMain.Text = "Ccs3 Client App";
-            notifyIconMain.Visible = true;
             // 
             // lblRemainingTime
             // 
@@ -154,7 +151,7 @@
             gbCustomerCardGroup.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             gbCustomerCardGroup.Controls.Add(btnChangePassword);
             gbCustomerCardGroup.Controls.Add(btnEndSession);
-            gbCustomerCardGroup.Location = new Point(12, 293);
+            gbCustomerCardGroup.Location = new Point(24, 275);
             gbCustomerCardGroup.Name = "gbCustomerCardGroup";
             gbCustomerCardGroup.Size = new Size(440, 89);
             gbCustomerCardGroup.TabIndex = 9;
@@ -191,11 +188,27 @@
             lblContinuationTariffValue.TabIndex = 11;
             lblContinuationTariffValue.Visible = false;
             // 
+            // lblHotKey
+            // 
+            lblHotKey.AutoSize = true;
+            lblHotKey.Font = new Font("Arial", 10F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblHotKey.Location = new Point(24, 374);
+            lblHotKey.Name = "lblHotKey";
+            lblHotKey.Size = new Size(342, 16);
+            lblHotKey.TabIndex = 12;
+            lblHotKey.Text = "CTRL+SHIFT+F1 показва/скрива тази информация";
+            // 
+            // notifyIconMain
+            // 
+            notifyIconMain.Text = "Ccs3 Client App";
+            notifyIconMain.Visible = true;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(14F, 27F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(621, 394);
+            ClientSize = new Size(621, 399);
+            Controls.Add(lblHotKey);
             Controls.Add(lblContinuationTariffValue);
             Controls.Add(lblContinuationTariff);
             Controls.Add(gbCustomerCardGroup);
@@ -208,9 +221,10 @@
             Controls.Add(lblRemainingTimeValue);
             Controls.Add(lblRemainingTime);
             Font = new Font("Arial", 18F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(6, 5, 6, 5);
             Name = "MainForm";
-            Text = "Ccs3 Client App";
+            Text = "Ccs3 Client App - CTRL+SHIFT+F1 to how/hide";
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             Click += MainForm_Click;
@@ -220,8 +234,6 @@
         }
 
         #endregion
-
-        private NotifyIcon notifyIconMain;
         private Label lblRemainingTime;
         private Label lblRemainingTimeValue;
         private Label lblStartedAt;
@@ -235,5 +247,7 @@
         private Button btnChangePassword;
         private Label lblContinuationTariff;
         private Label lblContinuationTariffValue;
+        private Label lblHotKey;
+        private NotifyIcon notifyIconMain;
     }
 }
