@@ -190,6 +190,7 @@
             // 
             // lblHotKey
             // 
+            lblHotKey.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblHotKey.AutoSize = true;
             lblHotKey.Font = new Font("Arial", 10F, FontStyle.Regular, GraphicsUnit.Point, 204);
             lblHotKey.Location = new Point(24, 374);
