@@ -225,7 +225,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(6, 5, 6, 5);
             Name = "MainForm";
-            Text = "Ccs3 Client App - CTRL+SHIFT+F1 to how/hide";
+            Text = "Ccs3 Client App - CTRL+SHIFT+F12 to show/hide";
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
             Click += MainForm_Click;

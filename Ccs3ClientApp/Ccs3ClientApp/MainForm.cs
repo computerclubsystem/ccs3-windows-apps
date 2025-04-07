@@ -150,7 +150,7 @@ namespace Ccs3ClientApp {
             notifyIconMain.Visible = true;
             notifyIconMain.Text = "Ccs3 Client App";
             notifyIconMain.Click += NotifyIconMain_Click;
-            notifyIconMain.ShowBalloonTip(3000, "Ccs3 Client App", "CTRL+SHIFT+F1 - От тук може да видите информация за текущата сесия", ToolTipIcon.Info);
+            notifyIconMain.ShowBalloonTip(3000, "Ccs3 Client App", "CTRL+SHIFT+F12 - От тук може да видите информация за текущата сесия", ToolTipIcon.Info);
             notifyIconMain.BalloonTipClicked += NotifyIconMain_BalloonTipClicked;
             lblRemainingTimeValue.Text = "";
             Text = "Ccs3 Client App " + typeof(MainForm).Assembly.GetName().Version.ToString();
