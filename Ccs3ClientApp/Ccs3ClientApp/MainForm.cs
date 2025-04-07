@@ -34,7 +34,7 @@ namespace Ccs3ClientApp {
                 new EventHandler<KeyPressedEventArgs>(hotKeyManager_KeyPressed);
             _hotKeyManager.RegisterHotKey(
                 HotKeyModifierKeys.Control | HotKeyModifierKeys.Shift,
-                Keys.F1
+                Keys.F12
             );
         }
 
@@ -51,7 +51,7 @@ namespace Ccs3ClientApp {
             // TODO: Instead of using TopMost as indicator whether we should show or hide the window
             //       we should have a flag, which will be maintained on hot key and when the window
             //       is manually shown / closed by the user
-            if (e.Key == Keys.F1 && e.Modifier == (HotKeyModifierKeys.Control | HotKeyModifierKeys.Shift)) {
+            if (e.Key == Keys.F12 && e.Modifier == (HotKeyModifierKeys.Control | HotKeyModifierKeys.Shift)) {
                 if (TopMost) {
                     HideMainWindow();
                 } else {

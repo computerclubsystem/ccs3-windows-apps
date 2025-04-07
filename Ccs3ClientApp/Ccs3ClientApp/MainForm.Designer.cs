@@ -195,9 +195,9 @@
             lblHotKey.Font = new Font("Arial", 10F, FontStyle.Regular, GraphicsUnit.Point, 204);
             lblHotKey.Location = new Point(24, 374);
             lblHotKey.Name = "lblHotKey";
-            lblHotKey.Size = new Size(342, 16);
+            lblHotKey.Size = new Size(282, 16);
             lblHotKey.TabIndex = 12;
-            lblHotKey.Text = "CTRL+SHIFT+F1 показва/скрива тази информация";
+            lblHotKey.Text = "CTRL+SHIFT+F12 to show/hide this window";
             // 
             // notifyIconMain
             // 
