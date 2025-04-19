@@ -14,7 +14,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
 	<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
 	<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
-	<AssemblyVersion>3.0.0.39</AssemblyVersion>
+	<AssemblyVersion>3.0.0.40</AssemblyVersion>
 	<RepositoryUrl>https://github.com/computerclubsystem/ccs3-windows-apps</RepositoryUrl>
 	<ApplicationIcon>suitcase-1-64px.ico</ApplicationIcon>
   </PropertyGroup>

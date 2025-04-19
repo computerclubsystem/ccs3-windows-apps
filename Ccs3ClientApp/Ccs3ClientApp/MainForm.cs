@@ -4,6 +4,7 @@ using Ccs3ClientApp.Messages.LocalClient.Declarations;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Media;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -282,6 +283,11 @@ namespace Ccs3ClientApp {
             }
             string msgType = partialMsg.Header.Type;
             switch (msgType) {
+                case DeviceToLocalClientNotificationMessageType.SessionWillEndSoon: {
+                        var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientSessionWillEndSoonNotificationMessage, DeviceToLocalClientSessionWillEndSoonNotificationMessageBody>(stringData);
+                        ProcessDeviceToLocalClientSessionWillEndSoonNotificationMessage(msg);
+                        break;
+                    }
                 case DeviceToLocalClientNotificationMessageType.SecondsBeforeRestart: {
                         var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientSecondsBeforeRestartNotificationMessage, DeviceToLocalClientSecondsBeforeRestartNotificationMessageBody>(stringData);
                         ProcessDeviceToLocalClientSecondsBeforeRestartNotificationMessage(msg);
@@ -366,6 +372,22 @@ namespace Ccs3ClientApp {
             destination.MessageErrors = source.MessageErrors;
             destination.Failure = source.Failure;
             destination.Type = source.Type;
+        }
+
+        private void ProcessDeviceToLocalClientSessionWillEndSoonNotificationMessage(DeviceToLocalClientSessionWillEndSoonNotificationMessage msg) {
+            SafeChangeUI(() => {
+                string tooltipTitle = "Your session will end in " + SecondsToDurationText(msg.Body.RemainingSeconds);
+                // The timeout is ignored - the baloon timeouts are controlled by accessibility settings of the OS
+                int timeout = 10000;
+                // If string.Empty is provided for tooltip message, it is not shown, space is enough to show tooltip with only title
+                notifyIconMain.ShowBalloonTip(timeout, tooltipTitle, " ", ToolTipIcon.Warning);
+                if (!string.IsNullOrWhiteSpace(msg.Body.NotificationSoundFile)) {
+                    try {
+                        using var player = new SoundPlayer(msg.Body.NotificationSoundFile);
+                        player.Play();
+                    } catch { }
+                }
+            });
         }
 
         private void ProcessDeviceToLocalClientSecondsBeforeRestartNotificationMessage(DeviceToLocalClientSecondsBeforeRestartNotificationMessage msg) {

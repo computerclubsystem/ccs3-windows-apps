@@ -454,6 +454,7 @@ public class Worker : BackgroundService {
             HandleStartedToStoppedTransition();
         } else if (_state.StartedState == false && msg.Body.Started == true) {
             // Was stopped but now it is started
+            _state.SessionWillEndSoonMessageSentAt = DateTimeOffset.MinValue;
             HandleStoppedToStartedTransition();
         }
 
@@ -468,6 +469,22 @@ public class Worker : BackgroundService {
         };
         string serialized = SerializeDeviceToLocalClientNotificationMessage(msgToSend);
         SendToAllLocalClients(serialized);
+
+        bool hasContinuation = msg.Body.ContinuationTariffShortInfo?.Id > 0;
+        if (_state.StartedState == true &&
+            _deviceConfigNotificationMsg is not null &&
+            !hasContinuation &&
+            _deviceConfigNotificationMsg.Body.SecondsBeforeNotifyingCustomerForSessionEnd > 0 &&
+            msg.Body.Amounts.RemainingSeconds < _deviceConfigNotificationMsg.Body.SecondsBeforeNotifyingCustomerForSessionEnd &&
+            (DateTimeOffset.Now - _state.SessionWillEndSoonMessageSentAt).TotalSeconds > (_deviceConfigNotificationMsg.Body.SecondsBeforeNotifyingCustomerForSessionEnd + 10)
+        ) {
+            var sessionEndsSoonMsg = DeviceToLocalClientSessionWillEndSoonNotificationMessageHelper.CreateMessage();
+            sessionEndsSoonMsg.Body.RemainingSeconds = msg.Body.Amounts?.RemainingSeconds ?? 0;
+            sessionEndsSoonMsg.Body.NotificationSoundFile = _deviceConfigNotificationMsg.Body.SessionEndNotificationSoundFilePath;
+            string serializedSessionEndsSoonMsg = SerializeDeviceToLocalClientNotificationMessage(sessionEndsSoonMsg);
+            SendToAllLocalClients(serializedSessionEndsSoonMsg);
+            _state.SessionWillEndSoonMessageSentAt = DateTimeOffset.Now;
+        }
     }
 
     private async void SendToAllLocalClients(string data) {
@@ -917,5 +934,6 @@ public class Worker : BackgroundService {
         public bool? StartedState { get; set; }
         public DateTimeOffset? StartedToStoppedTransitionDate { get; set; }
         public bool Restarting { get; set; }
+        public DateTimeOffset SessionWillEndSoonMessageSentAt { get; set; }
     }
 }
