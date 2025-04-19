@@ -166,42 +166,42 @@ public class Worker : BackgroundService {
                 }
                 await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
             }
-        }
 
-        // Register the client app service
-        try {
-            _logger.LogInformation("Stopping service '{0}'", appServiceName);
+            // Register the client app service
             try {
-                StopService(appServiceName, _serviceOperationTimeout);
-            } catch (Exception ex) {
-                _logger.LogWarning(ex, "Can't stop service '{0}'", appServiceName);
-            }
-            string fullCcs3ClientAppWindowsServiceExecutablePath = Path.GetFullPath(Path.Combine(clientAppDirectory, ccs3ClientAppWindowsServiceFileName));
-            _logger.LogInformation("Unregistering service '{0}'", appServiceName);
-            // First unregister the service
-            UnregisterService(appServiceName);
-            ProcessStartInfo psi = new() {
-                FileName = "sc.exe",
-                Arguments = string.Format("create \"{0}\" DisplayName= \"CCS3 Client App Windows Service\" start= auto obj= LocalSystem binpath= \"{1}\"", appServiceName, fullCcs3ClientAppWindowsServiceExecutablePath)
-            };
-            _logger.LogInformation("Starting '{0}' with arguments '{1}'", psi.FileName, psi.Arguments);
-            using Process proc = Process.Start(psi)!;
-            _logger.LogInformation("Waiting for '{0}' to exit", psi.FileName);
-            proc.WaitForExit(_processExitTimeout);
-            _logger.LogInformation("'{0}' exited with exit code", psi.FileName, proc.ExitCode);
-            if (proc.ExitCode != 0) {
-                if (canLogCritical) {
-                    _logger.LogCritical("Can't register client app service. sc.exe exit code {0}", proc.ExitCode);
+                _logger.LogInformation("Stopping service '{0}'", appServiceName);
+                try {
+                    StopService(appServiceName, _serviceOperationTimeout);
+                } catch (Exception ex) {
+                    _logger.LogWarning(ex, "Can't stop service '{0}'", appServiceName);
                 }
-            } else {
-                ConfigureClientAppServiceRestartsOnFailure(appServiceName);
-            }
-            _logger.LogInformation("Starting service '{0}'", appServiceName);
-            StartService(appServiceName, _serviceOperationTimeout);
-            _logger.LogInformation("Starting service '{0}' completed", appServiceName);
-        } catch (Exception ex) {
-            if (canLogCritical) {
-                _logger.LogCritical(ex, "Can't register or start client app service");
+                string fullCcs3ClientAppWindowsServiceExecutablePath = Path.GetFullPath(Path.Combine(clientAppDirectory, ccs3ClientAppWindowsServiceFileName));
+                _logger.LogInformation("Unregistering service '{0}'", appServiceName);
+                // First unregister the service
+                UnregisterService(appServiceName);
+                ProcessStartInfo psi = new() {
+                    FileName = "sc.exe",
+                    Arguments = string.Format("create \"{0}\" DisplayName= \"CCS3 Client App Windows Service\" start= auto obj= LocalSystem binpath= \"{1}\"", appServiceName, fullCcs3ClientAppWindowsServiceExecutablePath)
+                };
+                _logger.LogInformation("Starting '{0}' with arguments '{1}'", psi.FileName, psi.Arguments);
+                using Process proc = Process.Start(psi)!;
+                _logger.LogInformation("Waiting for '{0}' to exit", psi.FileName);
+                proc.WaitForExit(_processExitTimeout);
+                _logger.LogInformation("'{0}' exited with exit code", psi.FileName, proc.ExitCode);
+                if (proc.ExitCode != 0) {
+                    if (canLogCritical) {
+                        _logger.LogCritical("Can't register client app service. sc.exe exit code {0}", proc.ExitCode);
+                    }
+                } else {
+                    ConfigureClientAppServiceRestartsOnFailure(appServiceName);
+                }
+                _logger.LogInformation("Starting service '{0}'", appServiceName);
+                StartService(appServiceName, _serviceOperationTimeout);
+                _logger.LogInformation("Starting service '{0}' completed", appServiceName);
+            } catch (Exception ex) {
+                if (canLogCritical) {
+                    _logger.LogCritical(ex, "Can't register or start client app service");
+                }
             }
         }
     }
