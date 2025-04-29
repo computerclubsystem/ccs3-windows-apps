@@ -7,8 +7,13 @@ using System.Threading.Tasks;
 
 namespace Ccs3ClientApp.Messages;
 
+public class DeviceToLocalClientConfigurationNotificationMessageFeatureFlags {
+    public bool CodeSignIn { get; set; }
+}
+
 public class DeviceToLocalClientConfigurationNotificationMessageBody {
     public int PingInterval { get; set; }
+    public DeviceToLocalClientConfigurationNotificationMessageFeatureFlags? FeatureFlags { get; set; }
 }
 
 public class DeviceToLocalClientConfigurationNotificationMessage : DeviceToLocalClientNotificationMessage<DeviceToLocalClientConfigurationNotificationMessageBody> {

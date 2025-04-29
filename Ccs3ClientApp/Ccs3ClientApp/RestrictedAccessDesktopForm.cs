@@ -1,4 +1,5 @@
 ﻿using Ccs3ClientApp.Messages;
+using QRCoder;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,6 +17,8 @@ namespace Ccs3ClientApp {
         public event EventHandler<EventArgs> RestartNow;
 
         private bool _canClose = false;
+        private bool _qrCodeSignInEnabled = false;
+        private int _qrCodeRemainingSeconds = 0;
 
         public RestrictedAccessDesktopForm() {
             InitializeComponent();
@@ -23,6 +26,45 @@ namespace Ccs3ClientApp {
 
         public void SetCanClose(bool canClose) {
             _canClose = canClose;
+        }
+
+        public void SetQrCodeVisibility(bool visible) {
+            SafeChangeUI(() => {
+                _qrCodeSignInEnabled = visible;
+                grpQrCodeSignIn.Visible = gbCustomerSignIn.Visible && _qrCodeSignInEnabled && _qrCodeRemainingSeconds > 0;
+            });
+        }
+
+        public void SetQrCodeUrl(string? url) {
+            if (url is null) {
+                return;
+            }
+            SafeChangeUI(() => {
+                SetQrCodeUrlValue(url);
+            });
+        }
+
+        public void SetQrCodeRemainingSeconds(int remainingSeconds) {
+            SafeChangeUI(() => {
+                _qrCodeRemainingSeconds = remainingSeconds;
+                lblQrCodeRemainingSecondsValue.Text = remainingSeconds.ToString();
+                // TODO: This must be revisited
+                grpQrCodeSignIn.Visible = gbCustomerSignIn.Visible && _qrCodeSignInEnabled && _qrCodeRemainingSeconds > 0;
+            });
+        }
+
+        private void SetQrCodeUrlValue(string qrCodeUrl) {
+            var payloadGen = new PayloadGenerator.Url(qrCodeUrl);
+            using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
+            using (QRCodeData qrCodeData = qrGenerator.CreateQrCode(payloadGen))
+            using (PngByteQRCode qrCode = new PngByteQRCode(qrCodeData)) {
+                byte[] qrCodeImage = qrCode.GetGraphic(7);
+                Bitmap bmp;
+                using (var ms = new MemoryStream(qrCodeImage)) {
+                    bmp = new Bitmap(ms);
+                    picQrCode.Image = bmp;
+                }
+            }
         }
 
         public void SetSecondsBeforeRestart(int seconds) {
@@ -112,7 +154,12 @@ namespace Ccs3ClientApp {
         }
 
         private void chkToggleCustomerCardSignIn_CheckedChanged(object sender, EventArgs e) {
-            gbCustomerSignIn.Visible = chkToggleCustomerCardSignIn.Checked;
+            ChangeSignInControlsVisibility(chkToggleCustomerCardSignIn.Checked);
+        }
+
+        private void ChangeSignInControlsVisibility(bool visible) {
+            gbCustomerSignIn.Visible = visible;
+            grpQrCodeSignIn.Visible = gbCustomerSignIn.Visible && _qrCodeSignInEnabled && _qrCodeRemainingSeconds > 0;
         }
 
         private void SafeChangeUI(Action action) {

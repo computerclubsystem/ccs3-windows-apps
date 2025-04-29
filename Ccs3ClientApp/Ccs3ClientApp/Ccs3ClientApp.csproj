@@ -14,13 +14,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
 	<ApplicationHighDpiMode>SystemAware</ApplicationHighDpiMode>
 	<ForceDesignerDpiUnaware>true</ForceDesignerDpiUnaware>
-	<AssemblyVersion>3.0.0.40</AssemblyVersion>
+	<AssemblyVersion>3.1.0.0</AssemblyVersion>
 	<RepositoryUrl>https://github.com/computerclubsystem/ccs3-windows-apps</RepositoryUrl>
 	<ApplicationIcon>suitcase-1-64px.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Content Include="suitcase-1-64px.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.6.0" />
   </ItemGroup>
 
 </Project>

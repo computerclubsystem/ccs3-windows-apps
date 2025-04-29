@@ -31,10 +31,16 @@
             txtCustomerCardPassword = new TextBox();
             lblCustomerCardPassword = new Label();
             txtCustomerCardID = new TextBox();
+            grpQrCodeSignIn = new GroupBox();
+            lblQrCodeRemainingSecondsValue = new Label();
+            lblQrCodeRemainingSeconds = new Label();
+            picQrCode = new PictureBox();
             chkToggleCustomerCardSignIn = new CheckBox();
             lblSecondsBeforeRestart = new Label();
             btnRestartNow = new Button();
             gbCustomerSignIn.SuspendLayout();
+            grpQrCodeSignIn.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)picQrCode).BeginInit();
             SuspendLayout();
             // 
             // lblVersion
@@ -74,7 +80,7 @@
             gbCustomerSignIn.Margin = new Padding(4);
             gbCustomerSignIn.Name = "gbCustomerSignIn";
             gbCustomerSignIn.Padding = new Padding(4);
-            gbCustomerSignIn.Size = new Size(439, 174);
+            gbCustomerSignIn.Size = new Size(442, 175);
             gbCustomerSignIn.TabIndex = 2;
             gbCustomerSignIn.TabStop = false;
             gbCustomerSignIn.Text = "Sign in";
@@ -137,6 +143,47 @@
             txtCustomerCardID.Size = new Size(81, 26);
             txtCustomerCardID.TabIndex = 2;
             // 
+            // grpQrCodeSignIn
+            // 
+            grpQrCodeSignIn.BackColor = Color.Black;
+            grpQrCodeSignIn.Controls.Add(lblQrCodeRemainingSecondsValue);
+            grpQrCodeSignIn.Controls.Add(lblQrCodeRemainingSeconds);
+            grpQrCodeSignIn.Controls.Add(picQrCode);
+            grpQrCodeSignIn.ForeColor = SystemColors.ButtonFace;
+            grpQrCodeSignIn.Location = new Point(464, 82);
+            grpQrCodeSignIn.Name = "grpQrCodeSignIn";
+            grpQrCodeSignIn.Size = new Size(283, 320);
+            grpQrCodeSignIn.TabIndex = 8;
+            grpQrCodeSignIn.TabStop = false;
+            grpQrCodeSignIn.Text = "QR code sign in";
+            grpQrCodeSignIn.Visible = false;
+            // 
+            // lblQrCodeRemainingSecondsValue
+            // 
+            lblQrCodeRemainingSecondsValue.Font = new Font("Segoe UI", 16F, FontStyle.Bold, GraphicsUnit.Point, 204);
+            lblQrCodeRemainingSecondsValue.Location = new Point(198, 273);
+            lblQrCodeRemainingSecondsValue.Name = "lblQrCodeRemainingSecondsValue";
+            lblQrCodeRemainingSecondsValue.Size = new Size(66, 33);
+            lblQrCodeRemainingSecondsValue.TabIndex = 9;
+            lblQrCodeRemainingSecondsValue.Text = "0";
+            // 
+            // lblQrCodeRemainingSeconds
+            // 
+            lblQrCodeRemainingSeconds.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblQrCodeRemainingSeconds.Location = new Point(19, 282);
+            lblQrCodeRemainingSeconds.Name = "lblQrCodeRemainingSeconds";
+            lblQrCodeRemainingSeconds.Size = new Size(161, 26);
+            lblQrCodeRemainingSeconds.TabIndex = 8;
+            lblQrCodeRemainingSeconds.Text = "Remaining seconds";
+            // 
+            // picQrCode
+            // 
+            picQrCode.Location = new Point(19, 25);
+            picQrCode.Name = "picQrCode";
+            picQrCode.Size = new Size(245, 245);
+            picQrCode.TabIndex = 7;
+            picQrCode.TabStop = false;
+            // 
             // chkToggleCustomerCardSignIn
             // 
             chkToggleCustomerCardSignIn.Appearance = Appearance.Button;
@@ -153,7 +200,7 @@
             // 
             lblSecondsBeforeRestart.AutoSize = true;
             lblSecondsBeforeRestart.ForeColor = Color.Orange;
-            lblSecondsBeforeRestart.Location = new Point(15, 260);
+            lblSecondsBeforeRestart.Location = new Point(15, 456);
             lblSecondsBeforeRestart.Name = "lblSecondsBeforeRestart";
             lblSecondsBeforeRestart.Size = new Size(111, 18);
             lblSecondsBeforeRestart.TabIndex = 4;
@@ -163,7 +210,7 @@
             // btnRestartNow
             // 
             btnRestartNow.BackColor = Color.Orange;
-            btnRestartNow.Location = new Point(15, 285);
+            btnRestartNow.Location = new Point(15, 481);
             btnRestartNow.Name = "btnRestartNow";
             btnRestartNow.Size = new Size(179, 31);
             btnRestartNow.TabIndex = 5;
@@ -179,6 +226,7 @@
             BackColor = Color.Black;
             ClientSize = new Size(1029, 540);
             ControlBox = false;
+            Controls.Add(grpQrCodeSignIn);
             Controls.Add(btnRestartNow);
             Controls.Add(lblSecondsBeforeRestart);
             Controls.Add(chkToggleCustomerCardSignIn);
@@ -198,6 +246,8 @@
             Load += RestrictedAccessDesktopForm_Load;
             gbCustomerSignIn.ResumeLayout(false);
             gbCustomerSignIn.PerformLayout();
+            grpQrCodeSignIn.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)picQrCode).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -215,5 +265,9 @@
         private CheckBox chkToggleCustomerCardSignIn;
         private Label lblSecondsBeforeRestart;
         private Button btnRestartNow;
+        private PictureBox picQrCode;
+        private GroupBox grpQrCodeSignIn;
+        private Label lblQrCodeRemainingSecondsValue;
+        private Label lblQrCodeRemainingSeconds;
     }
 }

@@ -211,6 +211,12 @@ public class Worker : BackgroundService {
         wsState.LastMessageReceivedAt = GetNow();
         string msgType = partialMsg.Header.Type;
         switch (msgType) {
+            case LocalClientToDeviceRequestMessageType.CreateSignInCode: {
+                    var msg = DeserializeLocalClientToDeviceRequestMessage<LocalClientToDeviceCreateSignInCodeRequestMessage, LocalClientToDeviceCreateSignInCodeRequestMessageBody>(stringData);
+                    var toServerReqMsg = DeviceToServerCreateSignInCodeRequestMessageHelper.CreateMessage();
+                    SendDeviceToServerRequestMessage(toServerReqMsg, toServerReqMsg.Header);
+                    break;
+                }
             case LocalClientToDeviceRequestMessageType.Ping: {
                     // We don't need to process the ping message - LastMessageReceivedAt was already set
                     break;
@@ -219,7 +225,7 @@ public class Worker : BackgroundService {
                     var msg = DeserializeLocalClientToDeviceRequestMessage<LocalClientToDeviceStartOnPrepaidTariffRequestMessage, LocalClientToDeviceStartOnPrepaidTariffRequestMessageBody>(stringData);
                     var toServerReqMsg = DeviceToServerStartOnPrepaidTariffRequestMessageHelper.CreateMessage();
                     toServerReqMsg.Body.TariffId = msg.Body.TariffId;
-                    toServerReqMsg.Body.PasswordHash = msg.Body.PasswordHash; ;
+                    toServerReqMsg.Body.PasswordHash = msg.Body.PasswordHash;
                     SendDeviceToServerRequestMessage(toServerReqMsg, toServerReqMsg.Header);
                     break;
                 }
@@ -266,7 +272,24 @@ public class Worker : BackgroundService {
     private async void SendConfigurationNotificationMessage(WebSocket ws) {
         DeviceToLocalClientConfigurationNotificationMessage msg = DeviceToLocalClientConfigurationNotificationMessageHelper.CreateMessage();
         msg.Body.PingInterval = _state.LocalClientPingInterval;
+        if (_deviceConfigNotificationMsg?.Body?.FeatureFlags is not null) {
+            msg.Body.FeatureFlags = new DeviceToLocalClientConfigurationNotificationMessageFeatureFlags {
+                CodeSignIn = _deviceConfigNotificationMsg.Body.FeatureFlags.CodeSignIn
+            };
+        }
         await SendDeviceToLocalClientNotificationMessage(msg, ws);
+    }
+
+    private async void SendConfigurationNotificationMessageToAllLocalClients() {
+        DeviceToLocalClientConfigurationNotificationMessage msg = DeviceToLocalClientConfigurationNotificationMessageHelper.CreateMessage();
+        msg.Body.PingInterval = _state.LocalClientPingInterval;
+        if (_deviceConfigNotificationMsg?.Body?.FeatureFlags is not null) {
+            msg.Body.FeatureFlags = new DeviceToLocalClientConfigurationNotificationMessageFeatureFlags {
+                CodeSignIn = _deviceConfigNotificationMsg.Body.FeatureFlags.CodeSignIn
+            };
+        }
+        string serialized = SerializeDeviceToLocalClientNotificationMessage(msg);
+        SendToAllLocalClients(serialized);
     }
 
     private void StartWebSocketConnector(CancellationToken cancellationToken) {
@@ -351,6 +374,11 @@ public class Worker : BackgroundService {
         PartialMessage msg = DeserializePartialMessage(stringData);
         string msgType = msg.Header.Type;
         switch (msgType) {
+            case ServerToDeviceReplyMessageType.CreateSignInCode:
+                // TODO: For now we will process this here
+                ServerToDeviceReplyMessage<ServerToDeviceCreateSignInCodeReplyMessageBody> createSignInCodeReplyMsg = CreateTypedMessageFromGenericServerToDeviceReplyMessage<ServerToDeviceCreateSignInCodeReplyMessageBody>(msg);
+                ProcessServerToDeviceCreateSignInCodeReplyMessage(createSignInCodeReplyMsg);
+                break;
             case ServerToDeviceNotificationMessageType.Restart:
                 ServerToDeviceNotificationMessage<ServerToDeviceRestartNotificationMessageBody> restartNotificationMsg = CreateTypedMessageFromGenericServerToDeviceNotificationMessage<ServerToDeviceRestartNotificationMessageBody>(msg);
                 ProcessServerToDeviceRestartNotificationMessage(restartNotificationMsg);
@@ -390,6 +418,17 @@ public class Worker : BackgroundService {
         SendToAllLocalClients(serialized);
     }
 
+    private void ProcessServerToDeviceCreateSignInCodeReplyMessage(ServerToDeviceReplyMessage<ServerToDeviceCreateSignInCodeReplyMessageBody> msg) {
+        var dtlcMsg = DeviceToLocalClientCreateSignInCodeReplyMessageHelper.CreateMessage();
+        TransferReplyHeader(msg.Header,dtlcMsg.Header);
+        dtlcMsg.Body.Url = msg.Body.Url;
+        dtlcMsg.Body.RemainingSeconds = msg.Body.RemainingSeconds;
+        dtlcMsg.Body.IdentifierType = msg.Body.IdentifierType;
+        dtlcMsg.Body.Code = msg.Body.Code;
+        var serialized = SerializeDeviceToLocalClientReplyMessage(dtlcMsg);
+        SendToAllLocalClients(serialized);
+    }
+
     private void ProcessServerToDeviceStartOnPrepaidTariffReplyMessage(ServerToDeviceReplyMessage<ServerToDeviceStartOnPrepaidTariffReplyMessageBody> msg) {
         var dtlcMsg = DeviceToLocalClientStartOnPrepaidTariffReplyMessageHelper.CreateMessage();
         TransferReplyHeader(msg.Header, dtlcMsg.Header);
@@ -412,6 +451,11 @@ public class Worker : BackgroundService {
 
     private void ProcessDeviceConfigurationNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> msg) {
         _deviceConfigNotificationMsg = msg;
+        ProcessDeviceConfigurationMessageChanged();
+    }
+
+    private void ProcessDeviceConfigurationMessageChanged() {
+        SendConfigurationNotificationMessageToAllLocalClients();
     }
 
     private void HandleStartedToStoppedTransition() {

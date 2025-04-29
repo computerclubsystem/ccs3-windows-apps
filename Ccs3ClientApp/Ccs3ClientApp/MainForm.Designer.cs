@@ -228,7 +228,6 @@
             Text = "Ccs3 Client App - CTRL+SHIFT+F12 to show/hide";
             FormClosing += MainForm_FormClosing;
             Load += MainForm_Load;
-            Click += MainForm_Click;
             gbCustomerCardGroup.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
