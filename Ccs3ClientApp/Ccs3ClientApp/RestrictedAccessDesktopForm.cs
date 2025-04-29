@@ -58,7 +58,7 @@ namespace Ccs3ClientApp {
             using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
             using (QRCodeData qrCodeData = qrGenerator.CreateQrCode(payloadGen))
             using (PngByteQRCode qrCode = new PngByteQRCode(qrCodeData)) {
-                byte[] qrCodeImage = qrCode.GetGraphic(7);
+                byte[] qrCodeImage = qrCode.GetGraphic(5);
                 Bitmap bmp;
                 using (var ms = new MemoryStream(qrCodeImage)) {
                     bmp = new Bitmap(ms);
@@ -172,6 +172,17 @@ namespace Ccs3ClientApp {
 
         private void btnRestartNow_Click(object sender, EventArgs e) {
             RestartNow?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void picQrCode_Click(object sender, EventArgs e) {
+
+        }
+
+        private void RestrictedAccessDesktopForm_MouseClick(object sender, MouseEventArgs e) {
+#if DEBUG
+            //grpQrCodeSignIn.Visible = true;
+            //SetQrCodeUrlValue("https://192.168.1.3:65503/?sign-in-code=12345678-1234-123456-12345678-1234&identifierType=customer-card");
+#endif
         }
     }
 

@@ -152,7 +152,7 @@
             grpQrCodeSignIn.ForeColor = SystemColors.ButtonFace;
             grpQrCodeSignIn.Location = new Point(464, 82);
             grpQrCodeSignIn.Name = "grpQrCodeSignIn";
-            grpQrCodeSignIn.Size = new Size(283, 320);
+            grpQrCodeSignIn.Size = new Size(379, 392);
             grpQrCodeSignIn.TabIndex = 8;
             grpQrCodeSignIn.TabStop = false;
             grpQrCodeSignIn.Text = "QR code sign in";
@@ -161,16 +161,16 @@
             // lblQrCodeRemainingSecondsValue
             // 
             lblQrCodeRemainingSecondsValue.Font = new Font("Segoe UI", 16F, FontStyle.Bold, GraphicsUnit.Point, 204);
-            lblQrCodeRemainingSecondsValue.Location = new Point(198, 273);
+            lblQrCodeRemainingSecondsValue.Location = new Point(185, 16);
             lblQrCodeRemainingSecondsValue.Name = "lblQrCodeRemainingSecondsValue";
-            lblQrCodeRemainingSecondsValue.Size = new Size(66, 33);
+            lblQrCodeRemainingSecondsValue.Size = new Size(84, 30);
             lblQrCodeRemainingSecondsValue.TabIndex = 9;
             lblQrCodeRemainingSecondsValue.Text = "0";
             // 
             // lblQrCodeRemainingSeconds
             // 
             lblQrCodeRemainingSeconds.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
-            lblQrCodeRemainingSeconds.Location = new Point(19, 282);
+            lblQrCodeRemainingSeconds.Location = new Point(16, 22);
             lblQrCodeRemainingSeconds.Name = "lblQrCodeRemainingSeconds";
             lblQrCodeRemainingSeconds.Size = new Size(161, 26);
             lblQrCodeRemainingSeconds.TabIndex = 8;
@@ -178,9 +178,9 @@
             // 
             // picQrCode
             // 
-            picQrCode.Location = new Point(19, 25);
+            picQrCode.Location = new Point(16, 51);
             picQrCode.Name = "picQrCode";
-            picQrCode.Size = new Size(245, 245);
+            picQrCode.Size = new Size(320, 320);
             picQrCode.TabIndex = 7;
             picQrCode.TabStop = false;
             // 
@@ -244,6 +244,7 @@
             WindowState = FormWindowState.Maximized;
             FormClosing += RestrictedAccessDesktopForm_FormClosing;
             Load += RestrictedAccessDesktopForm_Load;
+            MouseClick += RestrictedAccessDesktopForm_MouseClick;
             gbCustomerSignIn.ResumeLayout(false);
             gbCustomerSignIn.PerformLayout();
             grpQrCodeSignIn.ResumeLayout(false);
