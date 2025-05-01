@@ -558,11 +558,13 @@ public partial class MainForm : Form {
         _state.StartedToStoppedTransitionDate = DateTimeOffset.Now;
         SetQrCodeVisibility(false);
         SendLocalClientToDeviceCreateSignInCodeRequestMessage();
+        _state.RestrictedAccessDesktopForm.ChangeStartedState(false);
     }
 
     private void HandleStoppedToStartedTransition() {
         _state.StartedToStoppedTransitionDate = null;
         SetQrCodeVisibility(false);
+        _state.RestrictedAccessDesktopForm.ChangeStartedState(true);
     }
 
     private void ProcessCurrentStatus() {

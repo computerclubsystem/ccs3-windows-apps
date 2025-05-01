@@ -80,6 +80,14 @@ namespace Ccs3ClientApp {
             });
         }
 
+        public void ChangeStartedState(bool isStarted) {
+            SafeChangeUI(() => {
+                lblCustomerSignInErrorMessage.Visible = false;
+                txtCustomerCardID.Text = "";
+                txtCustomerCardPassword.Text = "";
+            });
+        }
+
         public void SetCustomerSignInResult(DeviceToLocalClientStartOnPrepaidTariffReplyMessage message) {
             SafeChangeUI(() => SetSignInResult(message));
         }
