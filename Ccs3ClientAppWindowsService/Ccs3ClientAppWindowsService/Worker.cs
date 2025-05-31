@@ -451,16 +451,7 @@ public class Worker : BackgroundService {
 
     private void ProcessDeviceConfigurationNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> msg) {
         _deviceConfigNotificationMsg = msg;
-        SanitizeServerToDeviceConfigurationNotificationMessage(_deviceConfigNotificationMsg);
         ProcessDeviceConfigurationMessageChanged();
-    }
-
-    private void SanitizeServerToDeviceConfigurationNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> msg) {
-        // TODO: This is for debugging purposes only where some machines crash with BSOD at the same time
-        //       which fixes itself by turning code sign in feature off
-        if (_deviceConfigNotificationMsg?.Body?.FeatureFlags is not null) {
-            _deviceConfigNotificationMsg.Body.FeatureFlags.CodeSignIn = false;
-        }
     }
 
     private void ProcessDeviceConfigurationMessageChanged() {
