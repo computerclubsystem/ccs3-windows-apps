@@ -272,10 +272,14 @@ public class Worker : BackgroundService {
     private async void SendConfigurationNotificationMessage(WebSocket ws) {
         DeviceToLocalClientConfigurationNotificationMessage msg = DeviceToLocalClientConfigurationNotificationMessageHelper.CreateMessage();
         msg.Body.PingInterval = _state.LocalClientPingInterval;
-        if (_deviceConfigNotificationMsg?.Body?.FeatureFlags is not null) {
-            msg.Body.FeatureFlags = new DeviceToLocalClientConfigurationNotificationMessageFeatureFlags {
-                CodeSignIn = _deviceConfigNotificationMsg.Body.FeatureFlags.CodeSignIn
-            };
+        if (_deviceConfigNotificationMsg?.Body is not null) {
+            msg.Body.SecondPriceCurrency = _deviceConfigNotificationMsg.Body.SecondPriceCurrency;
+            if (_deviceConfigNotificationMsg?.Body?.FeatureFlags is not null) {
+                msg.Body.FeatureFlags = new DeviceToLocalClientConfigurationNotificationMessageFeatureFlags {
+                    CodeSignIn = _deviceConfigNotificationMsg.Body.FeatureFlags.CodeSignIn,
+                    SecondPrice = _deviceConfigNotificationMsg.Body.FeatureFlags.SecondPrice,
+                };
+            }
         }
         await SendDeviceToLocalClientNotificationMessage(msg, ws);
     }
@@ -283,10 +287,14 @@ public class Worker : BackgroundService {
     private async void SendConfigurationNotificationMessageToAllLocalClients() {
         DeviceToLocalClientConfigurationNotificationMessage msg = DeviceToLocalClientConfigurationNotificationMessageHelper.CreateMessage();
         msg.Body.PingInterval = _state.LocalClientPingInterval;
-        if (_deviceConfigNotificationMsg?.Body?.FeatureFlags is not null) {
-            msg.Body.FeatureFlags = new DeviceToLocalClientConfigurationNotificationMessageFeatureFlags {
-                CodeSignIn = _deviceConfigNotificationMsg.Body.FeatureFlags.CodeSignIn
-            };
+        if (_deviceConfigNotificationMsg?.Body is not null) {
+            msg.Body.SecondPriceCurrency = _deviceConfigNotificationMsg.Body.SecondPriceCurrency;
+            if (_deviceConfigNotificationMsg?.Body?.FeatureFlags is not null) {
+                msg.Body.FeatureFlags = new DeviceToLocalClientConfigurationNotificationMessageFeatureFlags {
+                    CodeSignIn = _deviceConfigNotificationMsg.Body.FeatureFlags.CodeSignIn,
+                    SecondPrice = _deviceConfigNotificationMsg.Body.FeatureFlags.SecondPrice,
+                };
+            }
         }
         string serialized = SerializeDeviceToLocalClientNotificationMessage(msg);
         SendToAllLocalClients(serialized);
@@ -420,7 +428,7 @@ public class Worker : BackgroundService {
 
     private void ProcessServerToDeviceCreateSignInCodeReplyMessage(ServerToDeviceReplyMessage<ServerToDeviceCreateSignInCodeReplyMessageBody> msg) {
         var dtlcMsg = DeviceToLocalClientCreateSignInCodeReplyMessageHelper.CreateMessage();
-        TransferReplyHeader(msg.Header,dtlcMsg.Header);
+        TransferReplyHeader(msg.Header, dtlcMsg.Header);
         dtlcMsg.Body.Url = msg.Body.Url;
         dtlcMsg.Body.RemainingSeconds = msg.Body.RemainingSeconds;
         dtlcMsg.Body.IdentifierType = msg.Body.IdentifierType;

@@ -469,7 +469,7 @@ public partial class MainForm : Form {
     }
 
     private async Task SendLocalClientToDeviceCreateSignInCodeRequestMessage() {
-        if (_state.CurrentStatusNotificationMessage?.Body?.Started is true 
+        if (_state.CurrentStatusNotificationMessage?.Body?.Started is true
             || _state.ConfigurationNotificationMessage?.Body?.FeatureFlags?.CodeSignIn is not true
             ) {
             return;
@@ -647,14 +647,30 @@ public partial class MainForm : Form {
                 lblTotalTimeValue.Text = "0";
             }
             if (amounts.TotalSum.HasValue) {
-                var mainValue = decimal.Truncate(amounts.TotalSum.Value);
-                var fractionalValue = Math.Floor((amounts.TotalSum.Value % 1m) * 100);
-                string mainText = $"{mainValue}";
-                string fractionalText = $"{fractionalValue}".PadLeft(2, '0');
-                string finalText = $"{mainText}.{fractionalText}";
+                //var mainValue = decimal.Truncate(amounts.TotalSum.Value);
+                //var fractionalValue = Math.Floor((amounts.TotalSum.Value % 1m) * 100);
+                //string mainText = $"{mainValue}";
+                //string fractionalText = $"{fractionalValue}".PadLeft(2, '0');
+                string finalText = GetAmountString(amounts.TotalSum.Value);
+                if (_state.ConfigurationNotificationMessage?.Body?.FeatureFlags is not null) {
+                    bool hasSecondPrice = _state.ConfigurationNotificationMessage.Body.FeatureFlags.SecondPrice;
+                    if (hasSecondPrice && amounts.TotalSumSecondPrice is not null) {
+                        string secondPriceString = GetAmountString(amounts.TotalSumSecondPrice.Value);
+                        finalText += $" / {secondPriceString} {_state.ConfigurationNotificationMessage.Body.SecondPriceCurrency}";
+                    }
+                }
                 lblTotalSumValue.Text = finalText;
             }
         });
+    }
+
+    private string GetAmountString(decimal amount) {
+        var mainValue = decimal.Truncate(amount);
+        var fractionalValue = Math.Floor((amount % 1m) * 100);
+        string mainText = $"{mainValue}";
+        string fractionalText = $"{fractionalValue}".PadLeft(2, '0');
+        string finalText = $"{mainText}.{fractionalText}";
+        return finalText;
     }
 
     private string SecondsToDurationText(long seconds) {
