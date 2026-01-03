@@ -207,13 +207,13 @@ public class Worker : BackgroundService {
     }
 
     private Ccs3ClientAppWindowsServiceLocalFilesSha512MatchesResult Ccs3ClientAppWindowsServiceLocalFilesSha512Matches(
-        string sh512aFileContent,
+        string sha512FileContent,
         string localCcs3ClientAppWindowsServiceDir,
         string ccs3ClientAppWindowsServiceFileName
     ) {
         Ccs3ClientAppWindowsServiceLocalFilesSha512MatchesResult result = new();
         result.FilesInfo = new Tuple<string, string, string>[0];
-        string[] shaLines = sh512aFileContent.Split('\n');
+        string[] shaLines = sha512FileContent.Split('\n');
         string[] filteredShaLines = shaLines.Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
         Dictionary<string, string> keyValuePairs = new();
         if (filteredShaLines.Length > 0) {

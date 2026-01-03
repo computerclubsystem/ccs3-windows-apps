@@ -1,15 +1,13 @@
-FROM alpine:latest AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /app
+COPY . .
+# Publish and clean up unnecessary files from the output
+RUN dotnet publish -r win-x64 -c Release -o dist -p:UseAppHost=true \
+    && rm dist/aspnetcorev2_inprocess.dll \
+    && rm dist/appsettings.Development.json \
+    && rm dist/web.config
 
-# The docker context must be the folder with published files so we can zip them
-# The folder must also contain sub-folder Ccs3ClientApp containing the published client app files
-COPY Ccs3ClientAppWindowsService.exe /usr/ccs3-published-files/
-COPY appsettings.json /usr/ccs3-published-files/
-COPY Ccs3ClientApp/*.* /usr/ccs3-published-files/Ccs3ClientApp/
-RUN apk update && apk --no-cache add zip
-RUN mkdir /usr/ccs3-zipped-files
-RUN cd /usr/ccs3-published-files/ && zip -r -9 /usr/ccs3-zipped-files/Ccs3ClientAppWindowsService.zip .
-RUN sha512sum /usr/ccs3-zipped-files/Ccs3ClientAppWindowsService.zip > /usr/ccs3-zipped-files/Ccs3ClientAppWindowsService.sha
-RUN sha512sum /usr/ccs3-published-files/Ccs3ClientAppWindowsService.exe /usr/ccs3-published-files/Ccs3ClientApp/Ccs3ClientApp.exe > /usr/ccs3-zipped-files/ccs3-client-files-checksums.sha
-
-FROM alpine:latest
-COPY --from=build /usr/ccs3-zipped-files /usr/ccs3-zipped-files
+# Create scratch file-hosting only from the published output
+FROM scratch AS artifact
+COPY --from=build /app/dist/ /app/dist
