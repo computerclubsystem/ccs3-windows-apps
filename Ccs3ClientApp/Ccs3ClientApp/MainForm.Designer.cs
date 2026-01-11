@@ -44,6 +44,7 @@
             lblContinuationTariffValue = new Label();
             lblHotKey = new Label();
             notifyIconMain = new NotifyIcon(components);
+            lblConnectionStatus = new Label();
             gbCustomerCardGroup.SuspendLayout();
             SuspendLayout();
             // 
@@ -204,11 +205,26 @@
             notifyIconMain.Text = "Ccs3 Client App";
             notifyIconMain.Visible = true;
             // 
+            // lblConnectionStatus
+            // 
+            lblConnectionStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            lblConnectionStatus.AutoSize = true;
+            lblConnectionStatus.BackColor = Color.Red;
+            lblConnectionStatus.Font = new Font("Arial", 10F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblConnectionStatus.ForeColor = Color.Yellow;
+            lblConnectionStatus.Location = new Point(516, 374);
+            lblConnectionStatus.Name = "lblConnectionStatus";
+            lblConnectionStatus.Size = new Size(93, 16);
+            lblConnectionStatus.TabIndex = 13;
+            lblConnectionStatus.Text = "Disconnected";
+            lblConnectionStatus.TextAlign = ContentAlignment.MiddleRight;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(14F, 27F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(621, 399);
+            Controls.Add(lblConnectionStatus);
             Controls.Add(lblHotKey);
             Controls.Add(lblContinuationTariffValue);
             Controls.Add(lblContinuationTariff);
@@ -249,5 +265,6 @@
         private Label lblContinuationTariffValue;
         private Label lblHotKey;
         private NotifyIcon notifyIconMain;
+        private Label lblConnectionStatus;
     }
 }

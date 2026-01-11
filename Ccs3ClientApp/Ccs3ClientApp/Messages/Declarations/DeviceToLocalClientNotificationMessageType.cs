@@ -5,4 +5,5 @@ public static class DeviceToLocalClientNotificationMessageType {
     public const string CurrentStatus = "current-status-notification";
     public const string SecondsBeforeRestart = "seconds-before-restart-notification";
     public const string SessionWillEndSoon = "session-will-end-soon-notification";
+    public const string ConnectionStatus = "connection-status";
 }

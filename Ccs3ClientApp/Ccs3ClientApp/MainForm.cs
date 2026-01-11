@@ -296,6 +296,10 @@ public partial class MainForm : Form {
     }
 
     private void DeviceConnector_ReceiveError(object? sender, ReceiveErrorEventArgs e) {
+        var deviceConnector = (WebSocketConnector)sender;
+        if (deviceConnector.GetWebSocketState() != System.Net.WebSockets.WebSocketState.Open) {
+            SetConnectionStatusUI(false);
+        }
     }
 
     private void DeviceConnector_DataReceived(object? sender, DataReceivedEventArgs e) {
@@ -355,6 +359,11 @@ public partial class MainForm : Form {
             case DeviceToLocalClientNotificationMessageType.Configuration: {
                     var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientConfigurationNotificationMessage, DeviceToLocalClientConfigurationNotificationMessageBody>(stringData);
                     ProcessDeviceToLocalClientConfigurationNotificationMessage(msg);
+                    break;
+                }
+            case DeviceToLocalClientNotificationMessageType.ConnectionStatus: {
+                    var msg = DeserializeDeviceToLocalClientNotificationMessage<DeviceToLocalClientConnectionStatusNotificationMessage, DeviceToLocalClientConnectionStatusNotificationMessageBody>(stringData);
+                    ProcessDeviceToLocalClientConnectionStatusNotificationMessage(msg);
                     break;
                 }
         }
@@ -458,6 +467,18 @@ public partial class MainForm : Form {
         ProcessCurrentStatus();
     }
 
+    private async void ProcessDeviceToLocalClientConnectionStatusNotificationMessage(DeviceToLocalClientConnectionStatusNotificationMessage msg) {
+        _state.ConnectionStatusNotificationMessage = msg;
+        SetConnectionStatusUI(msg.Body.Connected);
+    }
+
+    private void SetConnectionStatusUI(bool connected) {
+        SafeChangeUI(() => {
+            lblConnectionStatus.Visible = !connected;
+            _state.RestrictedAccessDesktopForm.SetConnectionStatus(connected);
+        });
+    }
+
     private async void ProcessDeviceToLocalClientConfigurationNotificationMessage(DeviceToLocalClientConfigurationNotificationMessage msg) {
         _state.ConfigurationNotificationMessage = msg;
         if (_state.ConfigurationNotificationMessage.Body.FeatureFlags?.CodeSignIn == true) {
@@ -543,6 +564,7 @@ public partial class MainForm : Form {
     }
 
     private void DeviceConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
+        SetConnectionStatusUI(false);
     }
 
     private void DeviceConnector_ConnectError(object? sender, ConnectErrorEventArgs e) {
@@ -772,6 +794,7 @@ public partial class MainForm : Form {
         public WebSocketConnector DeviceConnector { get; set; }
         public CancellationToken CancellationToken { get; set; }
         public DeviceToLocalClientConfigurationNotificationMessage? ConfigurationNotificationMessage { get; set; }
+        public DeviceToLocalClientConnectionStatusNotificationMessage? ConnectionStatusNotificationMessage { get; set; }
         public DeviceToLocalClientCurrentStatusNotificationMessage? CurrentStatusNotificationMessage { get; set; }
         public JsonSerializerOptions JsonSerializerOptions { get; set; }
         public DateTimeOffset LastServerPingSentAt { get; set; }

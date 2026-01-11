@@ -88,6 +88,12 @@ namespace Ccs3ClientApp {
             });
         }
 
+        public void SetConnectionStatus(bool connected) {
+            SafeChangeUI(() => {
+                lblConnectionStatus.Visible = !connected;
+            });
+        }
+
         public void SetCustomerSignInResult(DeviceToLocalClientStartOnPrepaidTariffReplyMessage message) {
             SafeChangeUI(() => SetSignInResult(message));
         }

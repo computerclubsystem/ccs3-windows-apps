@@ -32,6 +32,10 @@ public class WebSocketConnector {
         ConnectWebSocket(_config.ServerUri);
     }
 
+    public WebSocketState? GetWebSocketState() {
+        return _state.WebSocket?.State;
+    }
+
     private void AbortCurrentWebSocket() {
         if (_state.WebSocket is not null) {
             try {
@@ -151,7 +155,7 @@ public class WebSocketConnector {
     }
 
     private class WebSocketConnectorState {
-        public ClientWebSocket WebSocket { get; set; }
+        public ClientWebSocket? WebSocket { get; set; }
     }
 }
 

@@ -31,7 +31,7 @@ public class Worker : BackgroundService {
     private JsonSerializerOptions _jsonSerializerOptions;
     private ServerToDeviceNotificationMessage<ServerToDeviceConfigurationNotificationMessageBody> _deviceConfigNotificationMsg;
     private ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> _deviceCurrentStatusNotificationMsg;
-    private System.Threading.Timer _timer;
+    private readonly System.Threading.Timer _timer;
     private readonly WorkerState _state = new WorkerState();
     private readonly WebSocketServerManager _wsServerManager;
 
@@ -338,14 +338,22 @@ public class Worker : BackgroundService {
     }
 
     private void _serverWsConnector_Disconnected(object? sender, DisconnectedEventArgs e) {
+        _state.ConnectedToServer = false;
+        SendConnectionStatusNotificationMessageToAllLocalClients();
         _logger.LogInformation("Disconnected from the server");
     }
 
     private void _serverWsConnector_ReceiveError(object? sender, ReceiveErrorEventArgs e) {
+        if (_serverWsConnector.GetWebSocketState() != WebSocketState.Open) {
+            _state.ConnectedToServer = false;
+            SendConnectionStatusNotificationMessageToAllLocalClients();
+        }
         _logger.LogWarning(e.Exception, "Server data receive error");
     }
 
     private void _serverWsConnector_Connected(object? sender, ConnectedEventArgs e) {
+        _state.ConnectedToServer = true;
+        SendConnectionStatusNotificationMessageToAllLocalClients();
         _logger.LogInformation("Connected to the server");
     }
 
@@ -479,11 +487,11 @@ public class Worker : BackgroundService {
     }
 
     private void ProcessServerToDeviceRestartNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceRestartNotificationMessageBody> msg) {
-        this._restartWindowsHelper.Restart();
+        _restartWindowsHelper.Restart();
     }
 
     private void ProcessServerToDeviceShutdownNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceShutdownNotificationMessageBody> msg) {
-        this._restartWindowsHelper.Shutdown();
+        _restartWindowsHelper.Shutdown();
     }
 
     private void ProcessServerToDeviceCurrentStatusNotificationMessage(ServerToDeviceNotificationMessage<ServerToDeviceCurrentStatusNotificationMessageBody> msg) {
@@ -746,8 +754,44 @@ public class Worker : BackgroundService {
     }
 
     private void TimerCallbackFunction(object? state) {
+        SetServerConnectionState();
         PingServer();
         CheckForRestartAfterStopped();
+        if (ShouldSendConnectionStatusToClients()) {
+            SendConnectionStatusNotificationMessageToAllLocalClients();
+        }
+    }
+
+    private void SetServerConnectionState() {
+        var serverConnectionSocketState = _serverWsConnector.GetWebSocketState();
+        _state.ConnectedToServer = serverConnectionSocketState == WebSocketState.Open;
+    }
+
+    private bool ShouldSendConnectionStatusToClients() {
+        if (_state.ConnectionStatusNotificationSentAt is null) {
+            return true;
+        }
+
+        var now = GetNow();
+        // Sent at a date in the future can happen at dayligh saving time
+        if (_state.ConnectionStatusNotificationSentAt > now) {
+            return true;
+        }
+
+        // Sent more than 5 seconds ago
+        if ((now - _state.ConnectionStatusNotificationSentAt) > _state.ConnectionStatusNotificationInterval) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void SendConnectionStatusNotificationMessageToAllLocalClients() {
+        _state.ConnectionStatusNotificationSentAt = GetNow();
+        DeviceToLocalClientConnectionStatusNotificationMessage msg = DeviceToLocalClientConnectionStatusNotificationMessageHelper.CreateMessage();
+        msg.Body.Connected = _state.ConnectedToServer;
+        string serialized = SerializeDeviceToLocalClientNotificationMessage(msg);
+        SendToAllLocalClients(serialized);
     }
 
     private void CheckForRestartAfterStopped() {
@@ -799,9 +843,10 @@ public class Worker : BackgroundService {
         }
 
         try {
-            TimeSpan diff = GetNow() - _state.LastServicePingDateTime;
+            var now = GetNow();
+            TimeSpan diff = now - _state.LastServicePingDateTime;
             if (diff.TotalMilliseconds >= _deviceConfigNotificationMsg.Body.PingInterval) {
-                _state.LastServicePingDateTime = DateTime.UtcNow;
+                _state.LastServicePingDateTime = now;
                 SendDeviceToServerPingNotificationMessage();
             }
         } catch (Exception ex) {
@@ -895,6 +940,7 @@ public class Worker : BackgroundService {
     }
 
     private void PrepareState() {
+        _state.ConnectionStatusNotificationInterval = TimeSpan.FromSeconds(5);
         _state.LastServicePingDateTime = GetNow();
         _state.LocalClientPingInterval = 5000;
         _state.WebSockets = new ConcurrentDictionary<WebSocket, ClientWebSocketState>();
@@ -987,5 +1033,8 @@ public class Worker : BackgroundService {
         public DateTimeOffset? StartedToStoppedTransitionDate { get; set; }
         public bool Restarting { get; set; }
         public DateTimeOffset SessionWillEndSoonMessageSentAt { get; set; }
+        public bool ConnectedToServer { get; set; }
+        public DateTimeOffset? ConnectionStatusNotificationSentAt { get; set; }
+        public TimeSpan ConnectionStatusNotificationInterval { get; set; }
     }
 }

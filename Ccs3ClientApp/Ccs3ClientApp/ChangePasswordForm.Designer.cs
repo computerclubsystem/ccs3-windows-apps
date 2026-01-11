@@ -23,7 +23,8 @@ partial class ChangePasswordForm {
     /// Required method for Designer support - do not modify
     /// the contents of this method with the code editor.
     /// </summary>
-    private void InitializeComponent() {
+    private void InitializeComponent()
+    {
         lblCurrentPassword = new Label();
         lblNewPassword = new Label();
         lblConfirmNewPassword = new Label();

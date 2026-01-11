@@ -38,6 +38,7 @@
             chkToggleCustomerCardSignIn = new CheckBox();
             lblSecondsBeforeRestart = new Label();
             btnRestartNow = new Button();
+            lblConnectionStatus = new Label();
             gbCustomerSignIn.SuspendLayout();
             grpQrCodeSignIn.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picQrCode).BeginInit();
@@ -219,6 +220,19 @@
             btnRestartNow.Visible = false;
             btnRestartNow.Click += btnRestartNow_Click;
             // 
+            // lblConnectionStatus
+            // 
+            lblConnectionStatus.AutoSize = true;
+            lblConnectionStatus.BackColor = Color.Red;
+            lblConnectionStatus.Font = new Font("Arial", 12F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblConnectionStatus.ForeColor = Color.Yellow;
+            lblConnectionStatus.Location = new Point(262, 11);
+            lblConnectionStatus.Margin = new Padding(4, 0, 4, 0);
+            lblConnectionStatus.Name = "lblConnectionStatus";
+            lblConnectionStatus.Size = new Size(104, 18);
+            lblConnectionStatus.TabIndex = 9;
+            lblConnectionStatus.Text = "Disconnected";
+            // 
             // RestrictedAccessDesktopForm
             // 
             AutoScaleDimensions = new SizeF(9F, 18F);
@@ -226,6 +240,7 @@
             BackColor = Color.Black;
             ClientSize = new Size(1029, 540);
             ControlBox = false;
+            Controls.Add(lblConnectionStatus);
             Controls.Add(grpQrCodeSignIn);
             Controls.Add(btnRestartNow);
             Controls.Add(lblSecondsBeforeRestart);
@@ -270,5 +285,6 @@
         private GroupBox grpQrCodeSignIn;
         private Label lblQrCodeRemainingSecondsValue;
         private Label lblQrCodeRemainingSeconds;
+        private Label lblConnectionStatus;
     }
 }
