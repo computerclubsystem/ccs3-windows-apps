@@ -7,6 +7,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -65,6 +66,19 @@ namespace Ccs3ClientApp {
                     picQrCode.Image = bmp;
                 }
             }
+        }
+
+        public void SetSessionInfo(SessionTextInfo? sessionTextInfo) {
+            SafeChangeUI(() => {
+                if (sessionTextInfo is null) {
+                    grpSessionInfo.Visible = false;
+                } else {
+                    lblStartedAtValue.Text = sessionTextInfo.StartedAt;
+                    lblTotalTimeValue.Text = sessionTextInfo.ElapsedTime;
+                    lblTotalSumValue.Text = sessionTextInfo.TotalSum;
+                    grpSessionInfo.Visible = true;
+                }
+            });
         }
 
         public void SetSecondsBeforeRestart(int seconds) {
@@ -203,5 +217,11 @@ namespace Ccs3ClientApp {
     public class CustomerSignInEventArgs : EventArgs {
         public int CustomerCardID { get; set; }
         public string PasswordHash { get; set; }
+    }
+
+    public class SessionTextInfo {
+        public string StartedAt { get; set; }
+        public string ElapsedTime { get; set; }
+        public string TotalSum { get; set; }
     }
 }

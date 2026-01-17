@@ -39,9 +39,17 @@
             lblSecondsBeforeRestart = new Label();
             btnRestartNow = new Button();
             lblConnectionStatus = new Label();
+            grpSessionInfo = new GroupBox();
+            lblTotalSumValue = new Label();
+            lblTotalSum = new Label();
+            lblTotalTimeValue = new Label();
+            lblTotalTime = new Label();
+            lblStartedAtValue = new Label();
+            lblStartedAt = new Label();
             gbCustomerSignIn.SuspendLayout();
             grpQrCodeSignIn.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picQrCode).BeginInit();
+            grpSessionInfo.SuspendLayout();
             SuspendLayout();
             // 
             // lblVersion
@@ -233,6 +241,89 @@
             lblConnectionStatus.TabIndex = 9;
             lblConnectionStatus.Text = "Disconnected";
             // 
+            // grpSessionInfo
+            // 
+            grpSessionInfo.Controls.Add(lblTotalSumValue);
+            grpSessionInfo.Controls.Add(lblTotalSum);
+            grpSessionInfo.Controls.Add(lblTotalTimeValue);
+            grpSessionInfo.Controls.Add(lblTotalTime);
+            grpSessionInfo.Controls.Add(lblStartedAtValue);
+            grpSessionInfo.Controls.Add(lblStartedAt);
+            grpSessionInfo.ForeColor = SystemColors.ButtonFace;
+            grpSessionInfo.Location = new Point(15, 290);
+            grpSessionInfo.Name = "grpSessionInfo";
+            grpSessionInfo.Size = new Size(442, 184);
+            grpSessionInfo.TabIndex = 10;
+            grpSessionInfo.TabStop = false;
+            grpSessionInfo.Text = "Session info";
+            grpSessionInfo.Visible = false;
+            // 
+            // lblTotalSumValue
+            // 
+            lblTotalSumValue.AutoSize = true;
+            lblTotalSumValue.Font = new Font("Arial", 14F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblTotalSumValue.Location = new Point(205, 136);
+            lblTotalSumValue.Margin = new Padding(6, 0, 6, 0);
+            lblTotalSumValue.Name = "lblTotalSumValue";
+            lblTotalSumValue.Size = new Size(48, 22);
+            lblTotalSumValue.TabIndex = 8;
+            lblTotalSumValue.Text = "0.00";
+            // 
+            // lblTotalSum
+            // 
+            lblTotalSum.AutoSize = true;
+            lblTotalSum.Font = new Font("Arial", 14F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblTotalSum.Location = new Point(9, 136);
+            lblTotalSum.Margin = new Padding(6, 0, 6, 0);
+            lblTotalSum.Name = "lblTotalSum";
+            lblTotalSum.Size = new Size(50, 22);
+            lblTotalSum.TabIndex = 7;
+            lblTotalSum.Text = "Total";
+            // 
+            // lblTotalTimeValue
+            // 
+            lblTotalTimeValue.AutoSize = true;
+            lblTotalTimeValue.Font = new Font("Arial", 14F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblTotalTimeValue.Location = new Point(205, 83);
+            lblTotalTimeValue.Margin = new Padding(6, 0, 6, 0);
+            lblTotalTimeValue.Name = "lblTotalTimeValue";
+            lblTotalTimeValue.Size = new Size(21, 22);
+            lblTotalTimeValue.TabIndex = 6;
+            lblTotalTimeValue.Text = "0";
+            // 
+            // lblTotalTime
+            // 
+            lblTotalTime.AutoSize = true;
+            lblTotalTime.Font = new Font("Arial", 14F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblTotalTime.Location = new Point(9, 83);
+            lblTotalTime.Margin = new Padding(6, 0, 6, 0);
+            lblTotalTime.Name = "lblTotalTime";
+            lblTotalTime.Size = new Size(121, 22);
+            lblTotalTime.TabIndex = 5;
+            lblTotalTime.Text = "Elapsed time";
+            // 
+            // lblStartedAtValue
+            // 
+            lblStartedAtValue.AutoSize = true;
+            lblStartedAtValue.Font = new Font("Arial", 14F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblStartedAtValue.Location = new Point(205, 34);
+            lblStartedAtValue.Margin = new Padding(6, 0, 6, 0);
+            lblStartedAtValue.Name = "lblStartedAtValue";
+            lblStartedAtValue.Size = new Size(16, 22);
+            lblStartedAtValue.TabIndex = 4;
+            lblStartedAtValue.Text = "-";
+            // 
+            // lblStartedAt
+            // 
+            lblStartedAt.AutoSize = true;
+            lblStartedAt.Font = new Font("Arial", 14F, FontStyle.Regular, GraphicsUnit.Point, 204);
+            lblStartedAt.Location = new Point(9, 34);
+            lblStartedAt.Margin = new Padding(6, 0, 6, 0);
+            lblStartedAt.Name = "lblStartedAt";
+            lblStartedAt.Size = new Size(91, 22);
+            lblStartedAt.TabIndex = 3;
+            lblStartedAt.Text = "Started at";
+            // 
             // RestrictedAccessDesktopForm
             // 
             AutoScaleDimensions = new SizeF(9F, 18F);
@@ -240,6 +331,7 @@
             BackColor = Color.Black;
             ClientSize = new Size(1029, 540);
             ControlBox = false;
+            Controls.Add(grpSessionInfo);
             Controls.Add(lblConnectionStatus);
             Controls.Add(grpQrCodeSignIn);
             Controls.Add(btnRestartNow);
@@ -264,6 +356,8 @@
             gbCustomerSignIn.PerformLayout();
             grpQrCodeSignIn.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picQrCode).EndInit();
+            grpSessionInfo.ResumeLayout(false);
+            grpSessionInfo.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -286,5 +380,12 @@
         private Label lblQrCodeRemainingSecondsValue;
         private Label lblQrCodeRemainingSeconds;
         private Label lblConnectionStatus;
+        private GroupBox grpSessionInfo;
+        private Label lblStartedAt;
+        private Label lblStartedAtValue;
+        private Label lblTotalTime;
+        private Label lblTotalTimeValue;
+        private Label lblTotalSum;
+        private Label lblTotalSumValue;
     }
 }

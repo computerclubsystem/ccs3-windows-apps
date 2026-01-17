@@ -627,20 +627,16 @@ public partial class MainForm : Form {
 
             }
             var amounts = _state.CurrentStatusNotificationMessage.Body.Amounts;
+
+            string remainingTimeFinalText;
             if (amounts.RemainingSeconds.HasValue && amounts.RemainingSeconds.Value > 0) {
-                //var ts = TimeSpan.FromSeconds(amounts.RemainingSeconds.Value);
-                //var hoursText = ts.Hours > 0 ? $"{ts.Hours}÷." : "";
-                //var minutesText = ts.Minutes > 0 ? $"{ts.Minutes}ì." : "";
-                //var secondsText = ts.Seconds > 0 ? $"{ts.Seconds}ñ." : "";
-                //string[] parts = new string[] { hoursText, minutesText, secondsText };
-                //parts = parts.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
-                //string finalText = string.Join(" ", parts);
-                string finalText = SecondsToDurationText(amounts.RemainingSeconds.Value);
-                lblRemainingTimeValue.Text = finalText;
-                notifyIconMain.Text = "Ccs3 Client App. Remaining time " + finalText;
+                remainingTimeFinalText = SecondsToDurationText(amounts.RemainingSeconds.Value);
+                notifyIconMain.Text = "Ccs3 Client App. Remaining time " + remainingTimeFinalText;
             } else {
-                lblRemainingTimeValue.Text = "0";
+                remainingTimeFinalText = "0";
             }
+            lblRemainingTimeValue.Text = remainingTimeFinalText;
+
             var continuationTariffInfo = _state.CurrentStatusNotificationMessage.Body.ContinuationTariffShortInfo;
             if (continuationTariffInfo != null) {
                 string tariffDurationText = string.Empty;
@@ -655,33 +651,57 @@ public partial class MainForm : Form {
                 lblContinuationTariff.Visible = false;
                 lblContinuationTariffValue.Visible = false;
             }
+
+            string startedAtFinalText;
             if (amounts.StartedAt.HasValue) {
                 var startedAt = DateTimeOffset.FromUnixTimeMilliseconds(amounts.StartedAt.Value);
-                string startedAtText = startedAt.LocalDateTime.ToString();
-                lblStartedAtValue.Text = startedAtText;
+                startedAtFinalText = startedAt.LocalDateTime.ToString();
             } else {
-                lblStartedAtValue.Text = "-";
+                startedAtFinalText = "-";
             }
+            lblStartedAtValue.Text = startedAtFinalText;
+
+            string totalTimeFinalText;
             if (amounts.TotalTime.HasValue) {
-                string finalText = SecondsToDurationText(amounts.TotalTime.Value);
-                lblTotalTimeValue.Text = finalText;
+                totalTimeFinalText = SecondsToDurationText(amounts.TotalTime.Value);
             } else {
-                lblTotalTimeValue.Text = "0";
+                totalTimeFinalText = "0";
             }
+            lblTotalTimeValue.Text = totalTimeFinalText;
+
+            string totalSumFinalText;
             if (amounts.TotalSum.HasValue) {
                 //var mainValue = decimal.Truncate(amounts.TotalSum.Value);
                 //var fractionalValue = Math.Floor((amounts.TotalSum.Value % 1m) * 100);
                 //string mainText = $"{mainValue}";
                 //string fractionalText = $"{fractionalValue}".PadLeft(2, '0');
-                string finalText = GetAmountString(amounts.TotalSum.Value);
+                totalSumFinalText = GetAmountString(amounts.TotalSum.Value);
                 if (_state.ConfigurationNotificationMessage?.Body?.FeatureFlags is not null) {
                     bool hasSecondPrice = _state.ConfigurationNotificationMessage.Body.FeatureFlags.SecondPrice;
                     if (hasSecondPrice && amounts.TotalSumSecondPrice is not null) {
                         string secondPriceString = GetAmountString(amounts.TotalSumSecondPrice.Value);
-                        finalText += $" / {secondPriceString} {_state.ConfigurationNotificationMessage.Body.SecondPriceCurrency}";
+                        totalSumFinalText += $" / {secondPriceString} {_state.ConfigurationNotificationMessage.Body.SecondPriceCurrency}";
                     }
                 }
-                lblTotalSumValue.Text = finalText;
+            } else {
+                totalSumFinalText = GetAmountString(0);
+            }
+            lblTotalSumValue.Text = totalSumFinalText;
+
+            if (!_state.CurrentStatusNotificationMessage.Body.Started) {
+                // Not started computers need to show session info to the restricted desktop
+                // if session info has values
+                bool showSessionInfoOnRestrictedDesktop = amounts.StartedAt.HasValue && amounts.TotalTime.HasValue && amounts.TotalSum.HasValue;
+                if (showSessionInfoOnRestrictedDesktop) {
+                    SessionTextInfo sessionTextInfo = new() {
+                        ElapsedTime = totalTimeFinalText,
+                        StartedAt = startedAtFinalText,
+                        TotalSum = totalSumFinalText,
+                    };
+                    _state.RestrictedAccessDesktopForm.SetSessionInfo(sessionTextInfo);
+                } else {
+                    _state.RestrictedAccessDesktopForm.SetSessionInfo(null);
+                }
             }
         });
     }
