@@ -209,7 +209,7 @@
             // 
             lblSecondsBeforeRestart.AutoSize = true;
             lblSecondsBeforeRestart.ForeColor = Color.Orange;
-            lblSecondsBeforeRestart.Location = new Point(15, 456);
+            lblSecondsBeforeRestart.Location = new Point(15, 486);
             lblSecondsBeforeRestart.Name = "lblSecondsBeforeRestart";
             lblSecondsBeforeRestart.Size = new Size(111, 18);
             lblSecondsBeforeRestart.TabIndex = 4;
@@ -219,7 +219,7 @@
             // btnRestartNow
             // 
             btnRestartNow.BackColor = Color.Orange;
-            btnRestartNow.Location = new Point(15, 481);
+            btnRestartNow.Location = new Point(278, 480);
             btnRestartNow.Name = "btnRestartNow";
             btnRestartNow.Size = new Size(179, 31);
             btnRestartNow.TabIndex = 5;
